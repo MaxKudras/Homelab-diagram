@@ -30,7 +30,7 @@ The script behind the network diagram of my homelab that I posted on r/homelab. 
 
 - Python 3 with **PyYAML** (Pillow is optional, but makes label widths exact)
 - **rsvg-convert** (librsvg) for the PNG
-- the fonts **Fira Sans** and **Fira Code** installed (found via fontconfig)
+- the fonts **Fira Sans** and **Fira Code**: included in `fonts/` (SIL OFL), `python3 setup.py` installs them; `python3 setup.py --check-fonts` tells you if upstream has newer versions
 
 On Arch/CachyOS: `pacman -S python-yaml python-pillow librsvg ttf-fira-sans ttf-fira-code`
 On Debian/Ubuntu: `apt install python3-yaml python3-pil librsvg2-bin fonts-firacode` plus Fira Sans
@@ -38,7 +38,7 @@ On Debian/Ubuntu: `apt install python3-yaml python3-pil librsvg2-bin fonts-firac
 ## Usage
 
 ```bash
-python3 fetch_icons.py          # downloads the service icons into icons/ (once)
+python3 setup.py                # installs the fonts from fonts/, checks rsvg-convert, downloads the icons (once)
 python3 build.py                # → out/homelab.svg + out/homelab.png (redacted)
 python3 build.py --unredacted   # → out/homelab-unredacted.svg + .png
 python3 build.py --ips=table    # + list of every IP in use (table | inline | both | sheet)
