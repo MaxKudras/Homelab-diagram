@@ -92,6 +92,7 @@ devices:
     icons: [cachyos, windows]
     vlan: "10"
     ip: "10.0.10.30 / .31"
+    ip_labels: ["CachyOS", "Windows 11"]   # one label per address above (IP list)
     internal: madcat
   jetkvm: {name: "JetKVM", type: "IP-KVM", model: "JetKVM", icons: [jetkvm], vlan: "10", ip: "10.0.10.11", internal: jetkvm}
   ap:     {name: "U7 Lite", type: "access point", model: "UniFi U7 Lite · Wi-Fi 7", icons: [unifi], vlan: "99", trunk: true, ip: "10.0.99.62", internal: u7lite}
@@ -101,6 +102,13 @@ ssids:
   - {name: "Home",        redacted: "Home",  vlan: "10"}
   - {name: "Guest",       redacted: "Guest", vlan: "30"}
   - {name: "IoT",         redacted: "IoT",   vlan: "40"}
+
+# addresses that don't sit on a card of their own; they show up in the IP list.
+# Everything else in the IP list is collected from the cards above (gateways = OPNsense .1 per VLAN).
+ip_extra:
+  - {vlan: "vpn", ip: ".1", name: "OPNsense", kind: "wg0"}
+  - {vlan: "vpn", ip: ".2", name: "Phone", kind: "peer"}
+  - {vlan: "vpn", ip: ".3", name: "Laptop", kind: "peer"}
 
 remote:
   name: "Remote access"
@@ -151,20 +159,21 @@ terra:
             - {icon: alloy,     name: "Alloy",        note: "access logs → Loki"}
     - name: "Monitoring"
       guests:
-        - {id: 102, name: "Grafana", icons: [grafana], note: "dashboards", host: grafana, exposure: local}
-        - {id: 113, name: "Prometheus", icons: [prometheus], note: "Traefik metrics", internal: prometheus}
-        - {id: 116, name: "Loki", icons: [loki], note: "logs via Alloy", internal: loki}
-        - {id: 120, name: "OpenSpeedTest", icons: [openspeedtest], note: "patched upload test", host: speedtest, exposure: public}
+        - {id: 102, ip: ".102", name: "Grafana", icons: [grafana], note: "dashboards", host: grafana, exposure: local}
+        - {id: 113, ip: ".113", name: "Prometheus", icons: [prometheus], note: "Traefik metrics", internal: prometheus}
+        - {id: 116, ip: ".116", name: "Loki", icons: [loki], note: "logs via Alloy", internal: loki}
+        - {id: 120, ip: ".120", name: "OpenSpeedTest", icons: [openspeedtest], note: "patched upload test", host: speedtest, exposure: public}
     - name: "Media & photos"
       guests:
         - id: 152
+          ip: ".152"
           name: "Jellyfin"
           icons: [jellyfin]
           note: "streaming (iGPU) + stats"
           apps:
             - {icon: jellyfin,  name: "Jellyfin",  host: jellyfin}
             - {icon: jellystat, name: "Jellystat", host: jellystat}
-        - {id: 153, name: "Seerr", icons: [seerr], note: "movie & series requests", host: seerr, exposure: public}
+        - {id: 153, ip: ".153", name: "Seerr", icons: [seerr], note: "movie & series requests", host: seerr, exposure: public}
         - id: 154
           ip: ".54"
           name: "*arr stack"
@@ -177,16 +186,17 @@ terra:
             - {icon: radarr,   name: "Radarr",     host: radarr}
             - {icon: prowlarr, name: "Prowlarr",   host: prowlarr}
             - {icon: bazarr,   name: "Bazarr",     host: bazarr}
-        - {id: 140, name: "qBittorrent", icons: [qbittorrent], note: "VueTorrent UI", host: torrent, exposure: public}
-        - {id: 130, name: "MeTube", icons: [metube], note: "YouTube downloader", host: yt, exposure: local}
+        - {id: 140, ip: ".140", name: "qBittorrent", icons: [qbittorrent], note: "VueTorrent UI", host: torrent, exposure: public}
+        - {id: 130, ip: ".130", name: "MeTube", icons: [metube], note: "YouTube downloader", host: yt, exposure: local}
         - {id: 158, ip: ".58", name: "Immich", icons: [immich], note: "photo library", host: immich, exposure: public}
     - name: "Productivity"
       guests:
-        - {id: 111, name: "Paperless-ngx", icons: [paperless], note: "scanned documents", host: paperless, exposure: public}
-        - {id: 125, name: "Stirling PDF", icons: [stirling], note: "PDF tools", host: pdf, exposure: public}
-        - {id: 132, name: "Tandoor", icons: [tandoor], note: "recipes", host: food, exposure: public}
-        - {id: 103, name: "Actual Budget", icons: [actual], note: "finances", host: actual, exposure: public}
+        - {id: 111, ip: ".111", name: "Paperless-ngx", icons: [paperless], note: "scanned documents", host: paperless, exposure: public}
+        - {id: 125, ip: ".125", name: "Stirling PDF", icons: [stirling], note: "PDF tools", host: pdf, exposure: public}
+        - {id: 132, ip: ".132", name: "Tandoor", icons: [tandoor], note: "recipes", host: food, exposure: public}
+        - {id: 103, ip: ".103", name: "Actual Budget", icons: [actual], note: "finances", host: actual, exposure: public}
         - id: 134
+          ip: ".134"
           name: "Open WebUI"
           icons: [openwebui-l, ollama-l]
           note: "local AI"
@@ -195,16 +205,17 @@ terra:
             - {icon: ollama-l,    name: "Ollama",     note: "local models"}
     - name: "Gaming"
       guests:
-        - {id: 100, name: "Pelican Panel", icons: [pelican], note: "game server panel", host: pelican, exposure: public}
-        - {id: 101, name: "Pelican Wings", icons: [pelican], note: "node2 · runs all game servers", host: node2, exposure: public}
+        - {id: 100, ip: ".100", name: "Pelican Panel", icons: [pelican], note: "game server panel", host: pelican, exposure: public}
+        - {id: 101, ip: ".101", name: "Pelican Wings", icons: [pelican], note: "node2 · runs all game servers", host: node2, exposure: public}
     - name: "Dev"
       guests:
-        - {id: 131, name: "Forgejo", icons: [forgejo], note: "git · SSH on public :22", host: git, exposure: public}
-        - {id: 119, name: "Forgejo runner", icons: [forgejo], note: "CI / Actions", internal: forgejo-runner}
-        - {id: 118, name: "Penpot", icons: [penpot-l], note: "design & prototyping", host: penpot, exposure: public}
+        - {id: 131, ip: ".131", name: "Forgejo", icons: [forgejo], note: "git · SSH on public :22", host: git, exposure: public}
+        - {id: 119, ip: ".119", name: "Forgejo runner", icons: [forgejo], note: "CI / Actions", internal: forgejo-runner}
+        - {id: 118, ip: ".118", name: "Penpot", icons: [penpot-l], note: "design & prototyping", host: penpot, exposure: public}
     - name: "Chat"
       guests:
         - id: 142
+          ip: ".142"
           name: "Matrix"
           icons: [matrix-l]
           note: "chat server"
@@ -213,6 +224,7 @@ terra:
             - {icon: cinny,    name: "Cinny",         note: "web client (same host)"}
             - {icon: matrix-l, name: "synapse-admin", note: "/admin · LAN only"}
         - id: 117
+          ip: ".117"
           name: "mautrix bridges"
           icons: [matrix-l, whatsapp]
           note: "chat bridges → Matrix"

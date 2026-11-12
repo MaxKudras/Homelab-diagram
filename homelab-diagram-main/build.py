@@ -10,6 +10,8 @@ Written with Claude (Anthropic) in Claude Code, see README.md.
 """
 import base64
 import html
+import ipaddress
+import math
 import pathlib
 import subprocess
 import sys
@@ -22,6 +24,19 @@ ICONS = ROOT / "icons"
 OUT = ROOT / "out"
 
 UNREDACTED = "--unredacted" in sys.argv
+# IP display variant: none (default, unchanged) · table (IP list under terra) · inline (full IPs on
+# every card) · both · sheet (the IP list as its own picture). --variants renders all of them.
+IP_MODES = ("table", "inline", "both", "sheet")
+IP_MODE = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--ips=")), "none")
+if IP_MODE not in IP_MODES + ("none",):
+    raise SystemExit(f"--ips= must be one of: {', '.join(IP_MODES)}")
+if "--variants" in sys.argv:
+    base = [sys.executable, __file__] + (["--unredacted"] if UNREDACTED else [])
+    for m in ("none",) + IP_MODES:
+        subprocess.run(base + [f"--ips={m}"], check=True)
+    raise SystemExit(0)
+IP_TABLE = IP_MODE in ("table", "both")
+IP_INLINE = IP_MODE in ("inline", "both")
 RED = INV["redact"]
 DOMAIN = INV["meta"]["domain"]
 SHOWN_DOMAIN = DOMAIN if (UNREDACTED or not RED["domain"]) else RED["domain_placeholder"]
@@ -313,6 +328,178 @@ def vlan_tag(vkey):
     return f"{v['tag']} · {v['name']}" if v["tag"].startswith("VLAN") else v["name"]
 
 
+# ---------------------------------------------------------------- IP addresses (all in use)
+ALL_VLANS = ["10", "20", "30", "40", "99"]   # the VLANs on the OPNsense trunk (OPNsense = .1 in each)
+
+
+def net(vkey):
+    return ipaddress.ip_network(VLAN[vkey]["subnet"], strict=False)
+
+
+def full_ip(vkey, ip, base=None):
+    """'.49' → '10.0.20.49' (host part in the VLAN's subnet, or in base's /24); full IPs pass through."""
+    ip = str(ip).strip()
+    if ip.startswith("."):
+        pre = (base or str(net(vkey).network_address)).rsplit(".", 1)[0]
+        return pre + ip
+    return ip
+
+
+def shown_ip(vkey, ip):
+    """Host part on the cards by default, the full address with --ips=inline/both."""
+    return full_ip(vkey, ip) if IP_INLINE else ip
+
+
+def vlan_of(ip):
+    a = ipaddress.ip_address(ip)
+    return next((k for k in VLAN if a in net(k)), None)
+
+
+def collect_ips():
+    """Every address the inventory uses: [{vlan, ip, name, kind, host}], one entry per address."""
+    out = []
+
+    def add(ip, name, kind, g=None, vkey=None):
+        ip = full_ip(vkey, ip) if vkey else ip
+        host = hostname(g)[0] if g else None
+        if g and not host and g.get("apps"):          # multi-app CT: the first app's hostname
+            host = next((hostname(a)[0] for a in g["apps"] if hostname(a)[0]), None)
+        out.append({"vlan": vkey or vlan_of(ip), "ip": ip, "name": name, "kind": kind, "host": host})
+
+    fb, opn, swc = INV["fritzbox"], INV["opnsense"], INV["switch"]
+    add(fb["ip"], fb["name"], "ISP router")
+    add(opn["wan_ip"], opn["name"], "WAN", vkey="wan")
+    for k in ALL_VLANS:
+        add(".1", opn["name"], "gateway", opn if k == "99" else None, vkey=k)
+    add(swc["ip"], swc["name"], "switch", swc)
+    for d in INV["devices"].values():
+        parts = [p.strip() for p in str(d["ip"]).split("/")]
+        labels = d.get("ip_labels") or []
+        for j, p in enumerate(parts):
+            ip = full_ip(None, p, base=parts[0]) if j else p
+            lbl = f"{d['name']} · {labels[j]}" if j < len(labels) else d["name"]
+            add(ip, lbl, d["type"], d)
+    T_ = INV["terra"]
+    add(T_["ip"], T_["name"], "Proxmox", T_)
+    for g in T_["other_guests"].values():
+        add(g["ip"], g["name"], f"{g['kind']} {g['id']}", g)
+    for grp in T_["dmz_groups"]:
+        for g in grp["guests"]:
+            add(g.get("ip", f".{g['id']}"), g["name"], f"CT {g['id']}", g, vkey="20")
+    for e in INV.get("ip_extra", []):
+        add(e["ip"], e["name"], e.get("kind", ""), vkey=e["vlan"])
+    # same address used by two different things = conflict (drawn red)
+    by_ip = {}
+    for e in out:
+        by_ip.setdefault(e["ip"], set()).add(e["name"].split(" · ")[0])
+    for e in out:
+        e["conflict"] = len(by_ip[e["ip"]]) > 1
+    # a gateway entry for MGMT duplicates OPNsense's own management IP: keep one row
+    seen, uniq = set(), []
+    for e in out:
+        key = (e["ip"], e["name"])
+        if key not in seen:
+            seen.add(key)
+            uniq.append(e)
+    return uniq
+
+
+IPS = None   # filled after hostname() exists (see below)
+IPT_HEAD, IPT_ROW, IPT_GAP = 50, 22, 12      # block header, row, gap between VLAN blocks
+
+
+def ip_layout(ncol):
+    """Split the VLAN blocks into ncol columns (newspaper style, a block may continue in the next
+    column with a repeated header). Returns (columns, height of the tallest column)."""
+    items = []
+    for v in INV["vlans"]:
+        rows = sorted((e for e in IPS if e["vlan"] == v["key"]), key=lambda e: ipaddress.ip_address(e["ip"]))
+        if rows:
+            items.append((v, rows))
+
+    def pack(limit):
+        cols, cur, h = [], [], 0
+        for v, rows in items:
+            rest, cont = list(rows), False
+            while rest:
+                need = (IPT_GAP if cur else 0) + IPT_HEAD + IPT_ROW      # header + at least one row
+                if cur and h + need > limit:
+                    cols.append((cur, h)); cur, h = [], 0
+                    need = IPT_HEAD + IPT_ROW
+                h += need - IPT_ROW
+                take = max(1, int((limit - h) // IPT_ROW)) if len(cols) < ncol - 1 else len(rest)
+                part, rest = rest[:take], rest[take:]
+                cur.append((v, part, cont, len(rows)))
+                h += len(part) * IPT_ROW
+                cont = True
+                if rest:
+                    cols.append((cur, h)); cur, h = [], 0
+        if cur:
+            cols.append((cur, h))
+        return cols
+
+    total = sum(IPT_HEAD + len(r) * IPT_ROW + IPT_GAP for _, r in items)
+    limit = max(IPT_HEAD + IPT_ROW, total / ncol)
+    while True:
+        cols = pack(limit)
+        if len(cols) <= ncol and all(h <= limit for _, h in cols[:-1]):
+            return [c for c, _ in cols], max(h for _, h in cols)
+        limit += IPT_ROW / 2
+
+
+def ip_table(x, y, w, ncol, hosts=False, draw=True):
+    """Panel listing every IP in use, grouped by VLAN. Returns its height."""
+    cols, ch = ip_layout(ncol)
+    h = 78 + ch + 18
+    if not draw:
+        return h
+    S.rect(x, y, w, h, rx=14, fill=PANEL, stroke=BORDER, sw=1.4)
+    S.text(x + 20, y + 36, "IP addresses", 19, TEXT, 600)
+    nconf = len({e["ip"] for e in IPS if e["conflict"]})
+    sub_ = (f"every address in use · {len(IPS)} addresses in {len({e['vlan'] for e in IPS})} networks · "
+            "sorted by VLAN, then address" + (f" · {nconf} conflicts in red" if nconf else " · no conflicts"))
+    S.text(x + 20, y + 58, sub_, 12.5, MUTED, 400)
+    gap = 16
+    cw_ = (w - 28 - gap * (ncol - 1)) / ncol
+    for ci, blocks in enumerate(cols):
+        cx_ = x + 14 + ci * (cw_ + gap)
+        yy = y + 78
+        for bi, (v, rows, cont, n) in enumerate(blocks):
+            if bi:
+                yy += IPT_GAP
+            col = v["color"]
+            S.rect(cx_, yy, cw_, IPT_HEAD - 8 + len(rows) * IPT_ROW + 6, rx=9, fill=CHIP, stroke=col + "55", sw=1)
+            S.add(f'<rect x="{cx_}" y="{yy}" width="6" height="{IPT_HEAD - 8}" rx="3" fill="{col}"/>')
+            S.text(cx_ + 16, yy + 18, v["tag"], 12.5, col, 600, mono=True)
+            S.text(cx_ + 16 + tw(v["tag"], 12.5, True) + 10, yy + 18, v["name"] + (" (cont.)" if cont else ""),
+                   14, TEXT, 600)
+            S.text(cx_ + cw_ - 12, yy + 18, v["subnet"], 12, TEXT, 500, "end", mono=True)
+            free = net(v["key"]).num_addresses - 2 - n
+            S.text(cx_ + 16, yy + 35, "continued from the left" if cont else f"{n} used · {free} free", 11.5, MUTED, 400)
+            yy += IPT_HEAD - 8
+            for k, e in enumerate(rows):
+                ry = yy + k * IPT_ROW
+                if k:
+                    S.add(f'<line x1="{cx_+12}" y1="{ry+2}" x2="{cx_+cw_-12}" y2="{ry+2}" stroke="{BORDER}" stroke-width="0.8"/>')
+                c_ip = "#ff7b72" if e["conflict"] else col
+                S.text(cx_ + 16, ry + 17, e["ip"], 12.5, c_ip, 600, mono=True)
+                nx_ = cx_ + 16 + 7.5 * 15 + 6          # after the widest address (15 chars)
+                S.text(nx_, ry + 17, e["name"], 13, "#ff7b72" if e["conflict"] else TEXT, 500)
+                S.text(cx_ + cw_ - 12, ry + 17, e["kind"], 11, FAINT, 500, "end", mono=True)
+                if hosts and e["host"]:
+                    hx = nx_ + measure(e["name"], 13, 600) + 10
+                    S.text(hx, ry + 17, e["host"], 11, LINK if not e["host"].endswith(".internal") else MUTED,
+                           400, mono=True)
+            yy += len(rows) * IPT_ROW + 6
+    return h
+
+
+# ---------------------------------------------------------------- IP list placement
+IPS = collect_ips()
+IPT_X, IPT_Y, IPT_W, IPT_COLS = 40, 2318, W - 80, 6    # full-width band under terra
+if IP_TABLE:
+    H = IPT_Y + ip_table(IPT_X, IPT_Y, IPT_W, IPT_COLS, draw=False) + 30
+
 # ---------------------------------------------------------------- background + header
 S.add(f'<defs><pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">'
       f'<circle cx="1.5" cy="1.5" r="1.3" fill="{GRID}"/></pattern></defs>')
@@ -333,7 +520,6 @@ ox, oy, ow, oh = 670, 468, 850, 430         # OPNsense (hardware list left, serv
 bx, by, bw, bh = 620, 990, 1000, 112       # switch
 SB = by + bh
 PX0, PITCH = bx + 320, 58
-ALL_VLANS = ["10", "20", "30", "40", "99"]
 
 
 def port_x(i):
@@ -430,11 +616,11 @@ for i in (0, 1):
 jack(WANX - 24, oy + 14, 48, 36, C["wan"] + "55", C["wan"])
 ticks(WANX, oy + 55, untagged="wan")
 S.label(WANX + 6, (fy + fh + oy + 14) / 2 + 4, "1G", C["wan"], 11, anchor="start", mono=True)     # speed tag like the other links
-S.text(WANX + 32, oy + 38, opn["wan_ip"], 14, C["wan"], 600, mono=True)
+S.text(WANX + 32, oy + 38, shown_ip("wan", opn["wan_ip"]), 14, C["wan"], 600, mono=True)
 for i in (0, 1):
     jack(port_x(i) - 24, oy + oh - 46, 48, 36, "#2a3443", TRUNK)
     if i == 1:                            # OPNsense is .1 in every VLAN on this trunk
-        S.text(port_x(i) + 32, oy + oh - 22, ".1", 14, TRUNK, 600, mono=True)
+        S.text(port_x(i) + 32, oy + oh - 22, "10.0.x.1" if IP_INLINE else ".1", 14, TRUNK, 600, mono=True)
     ticks(port_x(i), oy + oh - 51, tagged=ALL_VLANS, up=True)
 lx = (port_x(0) + port_x(1)) / 2
 ly = (oy + oh + by) / 2
@@ -753,7 +939,7 @@ def chip_apps(g, x, y, w):
     S.text(x + 14, y + 22, g["name"], 14.5, TEXT, 600)
     S.text(x + 14, y + 38, g.get("note", ""), 11.5, MUTED, 400)
     S.text(x + w - 12, y + 21, f"CT {g['id']}", 12, FAINT, 500, "end", mono=True)
-    S.text(x + w - 12, y + 37, g.get("ip", f".{g['id']}"), 11, FAINT, 500, "end", mono=True)
+    S.text(x + w - 12, y + 37, shown_ip("20", g.get("ip", f".{g['id']}")), 11, FAINT, 500, "end", mono=True)
     for k, a in enumerate(g["apps"]):
         ry = y + 50 + k * 21
         S.icon(a["icon"], x + 14, ry, 17)
@@ -791,7 +977,7 @@ def chip(g, x, y, w):
         if g.get("exposure") == "local":
             S.pill(nx + tw(name, 11.5, True) + 8, y + 44, "LAN", MUTED, 9.5, mono=True, pad=4, h=14)
     S.text(x + w - 12, y + 21, f"CT {g['id']}", 12, FAINT, 500, "end", mono=True)
-    S.text(x + w - 12, y + 37, g.get("ip", f".{g['id']}"), 11, FAINT, 500, "end", mono=True)
+    S.text(x + w - 12, y + 37, shown_ip("20", g.get("ip", f".{g['id']}")), 11, FAINT, 500, "end", mono=True)
     if g.get("docker"):
         docker_badge(x + 2, y + 2)
     return CH
@@ -909,8 +1095,27 @@ S.text(jx + 10, (RB + NH + RC) / 2 + 4, "library", 11, MUTED, 500)
 
 assert ty0 + th0 <= H - 20, f"canvas too short: terra ends at {ty0 + th0}"
 
+# ================================================================ IP list (--ips=table / both)
+if IP_TABLE:
+    assert IPT_Y >= ty0 + th0 + 20, f"IP list overlaps terra: {IPT_Y} < {ty0 + th0 + 20}"
+    ip_table(IPT_X, IPT_Y, IPT_W, IPT_COLS)
+
+# ================================================================ IP list as its own picture (--ips=sheet)
+if IP_MODE == "sheet":
+    S = SVG()
+    SH_COLS, SH_Y = 4, 130
+    H = SH_Y + ip_table(40, SH_Y, W - 80, SH_COLS, hosts=True, draw=False) + 40
+    S.add(f'<defs><pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">'
+          f'<circle cx="1.5" cy="1.5" r="1.3" fill="{GRID}"/></pattern></defs>')
+    S.rect(0, 0, W, H, rx=0, fill=BG, stroke=BG, sw=0)
+    S.rect(0, 0, W, H, rx=0, fill="url(#dots)", stroke="none", sw=0)
+    S.text(40, 86, title, 46, TEXT, 700, ls=-0.5)
+    S.text(W - 40, 74, meta["watermark"], 21, REDDIT, 700, "end")
+    S.text(W - 40, 100, meta["date"], 16, MUTED, 400, "end")
+    ip_table(40, SH_Y, W - 80, SH_COLS, hosts=True)
+
 OUT.mkdir(exist_ok=True)
-name = "homelab-unredacted" if UNREDACTED else "homelab"
+name = ("homelab-unredacted" if UNREDACTED else "homelab") + ("" if IP_MODE == "none" else f"-ips-{IP_MODE}")
 svg_path = OUT / f"{name}.svg"
 svg_path.write_text(S.render())
 png_path = OUT / f"{name}.png"

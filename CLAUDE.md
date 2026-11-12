@@ -34,6 +34,7 @@ Herkunft des Tools: Es stammt ursprünglich von *u/goblinmine* (MIT-Lizenz, `LIC
 
 - `inventory.yaml` enthält **alle Inhalte**: VLANs, ISP-Router, Firewall, Switch-Ports, Geräte, SSIDs, Portweiterleitungen, Server-Hardware, VMs/CTs, DMZ-Gruppen, Pools und Media-Pipeline.
 - `build.py` (~920 Zeilen) enthält das **handplatzierte Layout**. Es zeichnet eine SVG mit absoluten Koordinaten (Canvas `W=2400`, `H=2326`), bettet Icons als Base64 ein und wandelt mit `rsvg-convert -z 1.6` in PNG um (PNG-Pixel = SVG-Einheit × 1,6 → 3840 × 3722 px).
+- `setup.py` richtet alles ein (Fonts aus `fonts/`, rsvg-convert, Icons), `--check-fonts`/`--update-fonts` prüfen bzw. holen neue Font-Versionen.
 - `fetch_icons.py` lädt die Dienst-Icons aus `homarr-labs/dashboard-icons` nach `icons/`. Nur die eigenen `icons/glyph-*.svg` (CPU, RAM, SSD, HDD, NIC, GPU, DHCP, Schild, Block, Antenne) sind im Git.
 - `docs/example.png` ist das Referenzbild (so sieht der unveränderte Stand aus).
 - `out/` ist die Ausgabe (gitignored): `homelab.svg/png` (geschwärzt) und `homelab-unredacted.*` (mit `--unredacted`).
@@ -86,26 +87,28 @@ Herkunft des Tools: Es stammt ursprünglich von *u/goblinmine* (MIT-Lizenz, `LIC
 
 ```bash
 cd homelab-diagram-main
-python3 fetch_icons.py          # Icons laden (einmal; dauert hier lange, s. u.)
+python3 setup.py                # Fonts + rsvg-convert + Icons (einmal pro Sitzung, ~5 s)
 python3 build.py                # → out/homelab.svg + out/homelab.png (geschwärzt)
 python3 build.py --unredacted   # → out/homelab-unredacted.*
+python3 build.py --ips=table    # IP-Varianten: table | inline | both | sheet → out/homelab-ips-<variante>.*
+python3 build.py --variants     # alle Varianten auf einmal (Standard + 4 IP-Varianten)
 ```
+
+**IP-Liste:** `collect_ips()` sammelt jede genutzte Adresse aus der YAML (Karten, Gäste, DMZ, OPNsense `.1` je Trunk-VLAN) plus `ip_extra` (Adressen ohne eigene Karte, z. B. VPN-Peers). Doppelt vergebene IPs werden rot markiert. `table` = Liste unter terra (Canvas wird höher), `inline` = volle IPs auf den DMZ-Chips, `both` = beides, `sheet` = Liste als eigenes Bild mit Hostnamen. Ohne `--ips` bleibt das Bild unverändert.
 
 Abhängigkeiten: Python 3 + PyYAML + Pillow, `rsvg-convert` (librsvg) und die Fonts **Fira Sans** und **Fira Code**. Ohne Fira Sans stimmen alle Textbreiten nicht.
 
-**Einrichtung in der Cloud-Sitzung** (der Container ist frisch, nichts davon bleibt erhalten):
+**Einrichtung (Cloud-Sitzung oder neuer PC), ein Befehl, ~5 Sekunden:**
 
 ```bash
-apt-get install -y librsvg2-bin fonts-firacode
-mkdir -p ~/.local/share/fonts/fira && cd ~/.local/share/fonts/fira
-for w in Regular Medium SemiBold Bold; do
-  curl -sSfL -o FiraSans-$w.ttf "https://raw.githubusercontent.com/mozilla/Fira/master/ttf/FiraSans-$w.ttf"; done
-fc-cache -f
+cd homelab-diagram-main && python3 setup.py
 ```
 
-Einen apt-Paket für Fira Sans gibt es hier nicht. ImageMagick heißt hier `convert`, nicht `magick`.
+Das installiert die Fonts **aus dem Repo** (`fonts/`: Fira Sans + Fira Code, OFL-Lizenz) nach `~/.local/share/fonts/homelab-diagram`, installiert `rsvg-convert` per apt falls es fehlt (als root) und lädt fehlende Icons **parallel**. `cdn.jsdelivr.net` ist in der Cloud gesperrt. `fetch_icons.py` merkt das beim ersten Fehlversuch und nimmt danach direkt `raw.githubusercontent.com` (vorher ~7 Min., jetzt ~2 s). `python3 fetch_icons.py --force` lädt alle Icons neu.
 
-**Icons:** `cdn.jsdelivr.net` wird vom Proxy dieser Umgebung blockiert (403 beim Tunnel). `fetch_icons.py` fällt dann auf `raw.githubusercontent.com` zurück, wartet aber pro Icon erst die Retries ab. Deshalb dauert der Download etwa 6–7 Minuten (63 Icons), also im Hintergrund laufen lassen.
+**Fonts aktuell halten:** `python3 setup.py --check-fonts` vergleicht `fonts/` mit dem neuesten Stand (Fira Sans: SHA-256 gegen `mozilla/Fira` master; Fira Code: Versionsnummer aus dem README von `tonsky/FiraCode`). `python3 setup.py --update-fonts` lädt neuere Dateien nach `fonts/` und trägt sie in `fonts/fonts.json` ein. Danach neu rendern, vergleichen und committen.
+
+ImageMagick heißt hier `convert`, nicht `magick`.
 
 **Geprüft am 12.11.2026:** Mit diesem Setup rendert der unveränderte Stand fehlerfrei. Gegenüber `docs/example.png` liegt die mittlere Pixelabweichung bei ~0,9/255. Das ist nur Kantenglättung bzw. Font-Version, Layout und Inhalt sind identisch. Diese Abweichung ist also normal und kein Fehler.
 
