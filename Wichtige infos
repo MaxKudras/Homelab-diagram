@@ -1,0 +1,103 @@
+
+# Nummernplan Legende
+> **Eine Zahl soll etwas verraten.** Wer `1217` liest, soll ohne Nachschlagen wissen: das ist ein **Netzdienst**, ein **Container**, er hat die IP **`…178.217`**, startet **als Erstes**, wird um **01:20** gesichert und liegt im Pool **`netzdienste`**.
+
+Mit dieser Notiz lässt sich **jede** VMID, jeder Container und jeder Docker-Dienst im Haus entschlüsseln. Die vergebenen Nummern stehen in [[Geräte- und Gastverzeichnis]], die Namensregeln in [[Namensschema Legende]], IP und Port in [[Netzwerk Legende]].
+
+---
+
+## Die eine Formel
+```
+VMID  =  Kategorie × 1000  +  letztes IP-Oktett
+```
+```
+  1 2 1 7
+  │ └─┴─┴── letztes Oktett der IP      →  192.168.178.217
+  └──────── Kategorie 1                →  Netzdienst
+```
+
+## Die neun Kategorien – und die vier Dinge, die jede entscheidet
+| Ziffer | Kategorie | **Wann gehört etwas hinein** | VMID-Bereich | Start `order` | Sicherung ab | Pool(s) | Prometheus `rolle` | Beispiele |
+|:-:|---|---|---|:-:|:-:|---|---|---|
+| **0** | *Unterbau* | die Proxmox-Knoten selbst | `201`–`299` (= Oktett) | – | – | – | – | `pve-mgmt` 201 |
+| **1** | **Netzdienste** | ohne ihn kommt das Haus nicht ins Netz: DNS, Werbeblocker, DHCP, Proxy | `1000`–`1999` | `10` | `01:20` | `netzdienste` | `dns` | Pi-hole `1217`, PowerDNS `1218`, Recursor `1227` |
+| **2** | **Verwaltung & Überwachung** | nur der Betreiber benutzt es, um anderes zu sehen oder zu führen | `2000`–`2999` | `20` | `01:40` | `monitoring`, `ipam` | `ueberwachung`, `ipam` | Monitoring `2208`, NetBox `2213` |
+| **3** | **Automatisierung** | es führt Abläufe selbsttätig aus | `3000`–`3999` | `30` | `02:00` | `automatisierung` | `automatisierung` | Ansible `3210`, n8n `3211` |
+| **4** | **Identität & Geheimnisse** | Anmeldung, Konten, Passwörter, Schlüssel | `4000`–`4999` | `40` | `02:20` | `identitaet`, `passwoerter` | `identitaet` | Vaultwarden `4209`, Keycloak `4214` |
+| **5** | **Speicher & Sicherung** | es hält Daten oder Sicherungen | `5000`–`5999` | `50` | `02:40` | `speicher`, `datensicherung` | `speicher` | PBS `5212`, NAS `5219`–`5221` |
+| **6** | **Anwendungen** | **ein Mensch** benutzt es direkt | `6000`–`6999` | `60` | `03:00` | `web` | `anwendung` | Website `6216`, Nextcloud `6226`, OpenProject `6228` |
+| **7** | **Fernzugang** | Verkehr kommt von außen herein oder geht hinaus: VPN, Tunnel, Sprungpunkt | `7000`–`7999` | `70` | `03:20` | `vpn`, `zugang` | `vpn` | Tunnel `7215`, WireGuard `7222`, NetBird `7223` |
+| **8** | **Quellcode & CI** | Git, Runner, Registry | `8000`–`8999` | `80` | `03:40` | `quellcode` | `quellcode` | Forgejo `8224`, Runner `8225` |
+| **9** | **Labor** | darf kaputtgehen, wird nicht gesichert | `9100`–`9999` | `90`, `onboot=0` | **nie** | `lab` | `labor` | GNS3 `9230` |
+
+> Die Prometheus-Spalte `rolle` ist nur teilweise belegt (`dns`, `vpn`, `quellcode`, `identitaet` sind in Doku § 19.2 genannt). Die anderen Werte sind ein **Vorschlag**, damit jede Kategorie genau eine Rolle hat.
+
+**Zweifelsfall – wer benutzt das Ding?**
+- ein **Mensch** → 6
+- ein **anderer Dienst** → die Kategorie der Aufgabe (1, 3, 4, 5, 7, 8)
+- **niemand außer dem Betreiber** → 2
+
+## Abgeleitete Regeln (alles aus der Kategorie)
+| Was               | Formel                                    | Beispiel Kategorie 4 |
+| ----------------- | ----------------------------------------- | -------------------- |
+| VMID              | `K × 1000 + Oktett`                       | `4214`               |
+| Startreihenfolge  | `order = K × 10`                          | `order=40`           |
+| Sicherungsfenster | `01:00 + K × 20 min`                      | `02:20`              |
+
+
+**Warum die Startreihenfolge so ist:** DNS zuerst (fast alles löst beim Start Namen auf) → Überwachung (sieht den Rest des Hochlaufs) → Automatisierung → Identität (vor allem, was sich dagegen anmeldet) → Speicher (vor den Anwendungen, die darauf zugreifen) → Anwendungen → Fernzugang zuletzt (der Weg hinein darf offen sein, wenn drinnen alles steht). Wartezeiten: `up=30` für Knoten, `up=15` für Datenbankdienste.
+
+
+
+## Die drei Grundsätze auf einen Blick
+| # | Grundsatz | Merksatz |
+|:-:|---|---|
+| 1 | **VLAN = drittes Oktett** | Wer eine IP sieht, kennt das VLAN. Wer das VLAN kennt, kennt den Adressbereich. |
+| 2 | **Letztes Oktett = Rolle** – in jedem VLAN gleich | `.17` ist überall ein Wirt, `.55` überall ein Kerndienst, `.120` überall eine Anwendung. |
+| 3 | **Standardport, wenn es einen gibt** | Ein eigener Port muss an jeder Stelle erklärt werden, an der er auftaucht. Ein Standardport nirgends. |
+
+Dazu die Verbindung zum [[Nummernplan Legende|Nummernplan]]: `VMID = Kategorie × 1000 + letztes IP-Oktett`. Die IP steckt also auch in der ID des Gastes.
+
+---
+
+# VLAN Legende
+
+## Die Regel
+```
+VLAN N   ↔   Infrastruktur     10.0.N.0/24      (was immer läuft, selten angefasst wird)
+             Endgeräte         192.168.N.0/24   (was ein Mensch in die Hand nimmt)
+             virtuell/intern   172.16.N.0/24    (was den Wirt nie verlässt)
+```
+
+| Vorsilbe | Wofür | Erkennt man an | Warum getrennt |
+|---|---|---|---|
+| `10.0.x.x` | zentrale Infrastruktur: Verwaltung, Server, Speicher, Fernzugang, DMZ, Transit | „10" | was immer läuft – darf nie mit Endgeräten verwechselt werden |
+| `192.168.x.x` | Endgeräte und Rand: Laptop, Telefon, Gäste, IoT | „192.168" | was ein Mensch in die Hand nimmt – bekommt DHCP |
+| `172.16.x.x` | interne virtuelle Netze: Labor, SDN | „172.16" | was den Wirt nie verlässt – kein Weg ins Produktivnetz |
+
+und weiter provate address bereiche
+
+
+
+# Namensschema Legende
+**Aus dem Namen soll man ablesen können, wo etwas steht und was es tut.**
+Namen sind keine Zahlen, folgen aber derselben Idee wie der [[Nummernplan Legende|Nummernplan]] – mit einem entscheidenden Unterschied:
+
+> **Was sich ändern kann, gehört in den Namen. Was für immer gilt, gehört in die Zahl.**
+> Der Wirt steht im Namen (`net-pihole-lxc`), aber **nicht** in der VMID (`1217`). Zieht ein Gast um, ändert man den Namen – die VMID bleibt.
+
+---
+
+## Gäste: `<wirt>-<aufgabe>-<art>`
+```
+  net - pihole - lxc
+   │      │       └── Art:     lxc | vm
+   │      └────────── Aufgabe: ein Wort, klein, ohne Umlaut
+   └───────────────── Wirt:    auf welchem Knoten es heute läuft
+```
+
+| Teil | erlaubte Werte | Regel |
+|---|---|---|
+| `wirt` | `main` · `mgmt` · `net` · `net2` · `ki` · `lab` | Kurzform des Knotens, auf dem der Gast **heute** läuft |
+| `aufgabe` | ein Wort, Kleinbuchstaben, keine Umlaute (`ae`, `oe`, `ue`), kein Bindestrich | sagt, *was* läuft – nicht welches Produkt, wenn sich das Produkt ändern kann |
+| `art` | `lxc` · `vm` | Container oder virtuelle Maschine |
