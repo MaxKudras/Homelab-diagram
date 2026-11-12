@@ -8,7 +8,7 @@ Diese Datei ist die Hauptanleitung für dieses Repo. Lies sie bei jeder Sitzung 
 |---|---|---|
 | `homelab-diagram-main/` | Das **Homelab-Diagramm-Tool** (Python: YAML → SVG → PNG) | **Hier wird gearbeitet.** Ziel: das Tool massiv verbessern, Features ergänzen, perfekt aussehen lassen. |
 | `Vorherige plaene/` | Max' frühere Planungsprojekte (HTML-Tools + seine Angaben als Text) | **Nur Kontext, nicht ändern.** Zeigt, wie Max plant, was er will und wie sein Homelab werden soll. |
-| `Wichtige infos` | Max' aktuelles Nummern-, IP-, VLAN- und Namensschema (Auszug aus seinen Obsidian-Notizen) | **Nur Kontext, nicht ändern.** Neuester Stand, gilt vor den älteren Plänen. |
+| `Wichtige infos` | Max' Nummern-, IP-, VLAN- und Namensschema (Auszug aus seinen Obsidian-Notizen) | **Nur Kontext, nicht ändern.** Prinzipien richtig, aber noch anzupassen; konkrete Daten darin sind falsch. |
 
 Herkunft des Tools: Es stammt ursprünglich von *u/goblinmine* (MIT-Lizenz, `LICENSE` behalten) und zeigt in `inventory.yaml` noch **dessen** Beispiel-Homelab (OPNsense, MikroTik, Proxmox-Server „terra“, TrueNAS, DMZ-LXCs, *arr-Pipeline). Max' eigenes Homelab ist **geplant, aber noch kaum gebaut** (siehe unten). `homelab-diagram-main/CLAUDE.md` ist die englische Original-Anleitung des Autors zum „Anpassen an ein fremdes Lab“ (Interview-Fragen, Designregeln). Sie gilt weiter als Referenz. Bei Widersprüchen gilt **diese** Datei.
 
@@ -132,7 +132,7 @@ Einen apt-Paket für Fira Sans gibt es hier nicht. ImageMagick heißt hier `conv
 
 ## Kontext: Wer Max ist und wie er plant
 
-Quellen: `Wichtige infos` (Repo-Root, neuester Stand), `Vorherige plaene/Homelab aufteilung/Meine Angaben fuer homelab aufteilung`, `…/homelab-02-reife-atlas.html`, `Vorherige plaene/Homelab planner/Meine Angaben fuer homelab planner`, `…/neun-welten(1).html`.
+Quellen: `Wichtige infos` (Repo-Root, nur Prinzipien gültig), `Vorherige plaene/Homelab aufteilung/Meine Angaben fuer homelab aufteilung`, `…/homelab-02-reife-atlas.html`, `Vorherige plaene/Homelab planner/Meine Angaben fuer homelab planner`, `…/neun-welten(1).html`.
 
 ### Arbeitsweise und Geschmack
 
@@ -158,7 +158,7 @@ Quellen: `Wichtige infos` (Repo-Root, neuester Stand), `Vorherige plaene/Homelab
   - Quorum-Pi *Nornen*, 2× DNS-Pi *Muninn* (Pi-hole, getrennt vom Management-Node), KVM *Hliðskjálf*, NOC-Display *Valaskjálf*
   - Smart-Home-Box (eigene HAOS-Box), Funk-Koordinator *Landvættir*, USV *Megingjörð*, Steckdosen *Mjölnir*, Rack *Bilskirnir*
   - Wächter-Node (Monitoring getrennt), DMZ-Node, VPS **Yggdrasil** (WireGuard-Tunnel; dort u. a. Traefik, n8n, PostgreSQL), Cloudflare
-- **VLAN-Plan** (`NW.V`/`NW.NETDEF`; die Netzbereiche sind durch `Wichtige infos` überholt, siehe unten):
+- **VLAN-Plan** (`NW.V`/`NW.NETDEF`; Stand „Neun Welten“, nicht final, siehe Prinzipien unten):
 
   | VLAN | Name | Netz |
   |---|---|---|
@@ -187,48 +187,29 @@ Quellen: `Wichtige infos` (Repo-Root, neuester Stand), `Vorherige plaene/Homelab
   - „Reifegrad-Dienste“ = Querschnittsdienste wie Monitoring, Backup, SSO, Passwortmanager
   - Gesamtreife = schwächstes Glied
 
-### Nummern-, IP- und Namensschema (Quelle: `Wichtige infos`, neuester Stand)
+### Nummern-, IP- und Namensschema (Quelle: `Wichtige infos`)
 
-Diese Datei im Repo-Root ist **neuer als die HTML-Pläne**. Bei Widersprüchen gilt sie, z. B. `10.0.N.0/24` statt `10.10.N.0/24` aus „Neun Welten“. Sie verweist auf Obsidian-Notizen („Geräte- und Gastverzeichnis“, „Netzwerk Legende“), die hier nicht im Repo liegen. Grundidee: **Jede Zahl und jeder Name soll etwas verraten.**
+> **Status (laut Max):** Die **Ideen und Prinzipien** in `Wichtige infos` sind richtig, müssen aber noch angepasst werden. Die **konkreten Daten** darin sind **falsch**. Das betrifft VMIDs, IPs, Beispiel-Dienste, Wirt-Namen, Pools, Uhrzeiten und Prometheus-Rollen. Nichts davon als Fakt übernehmen, nicht ins Diagramm schreiben und nicht als Ist-Stand zitieren. Wenn konkrete Werte gebraucht werden, Max fragen.
 
-**VMID-Formel:** `VMID = Kategorie × 1000 + letztes IP-Oktett`. Beispiel `1217` = Netzdienst mit IP `….217`.
+Grundidee: **Jede Zahl und jeder Name soll etwas verraten.** Aus einer ID soll man ohne Nachschlagen ablesen können: Art des Dienstes, Container oder VM, IP, Startreihenfolge, Sicherungszeit und Pool.
 
-| K | Kategorie | Gehört hinein, wenn … | VMID | Start `order` | Backup | Pool(s) | Prometheus `rolle` | Beispiele |
-|:-:|---|---|---|:-:|:-:|---|---|---|
-| 0 | Unterbau | Proxmox-Knoten selbst | 201–299 (= Oktett) | – | – | – | – | `pve-mgmt` 201 |
-| 1 | Netzdienste | ohne ihn kein Netz (DNS, Werbeblocker, DHCP, Proxy) | 1000–1999 | 10 | 01:20 | `netzdienste` | `dns` | Pi-hole 1217, PowerDNS 1218, Recursor 1227 |
-| 2 | Verwaltung & Überwachung | nur der Betreiber nutzt es | 2000–2999 | 20 | 01:40 | `monitoring`, `ipam` | `ueberwachung`, `ipam` | Monitoring 2208, NetBox 2213 |
-| 3 | Automatisierung | führt Abläufe selbst aus | 3000–3999 | 30 | 02:00 | `automatisierung` | `automatisierung` | Ansible 3210, n8n 3211 |
-| 4 | Identität & Geheimnisse | Login, Konten, Passwörter, Schlüssel | 4000–4999 | 40 | 02:20 | `identitaet`, `passwoerter` | `identitaet` | Vaultwarden 4209, Keycloak 4214 |
-| 5 | Speicher & Sicherung | hält Daten/Backups | 5000–5999 | 50 | 02:40 | `speicher`, `datensicherung` | `speicher` | PBS 5212, NAS 5219–5221 |
-| 6 | Anwendungen | ein **Mensch** nutzt es direkt | 6000–6999 | 60 | 03:00 | `web` | `anwendung` | Website 6216, Nextcloud 6226, OpenProject 6228 |
-| 7 | Fernzugang | Verkehr rein/raus (VPN, Tunnel, Sprungpunkt) | 7000–7999 | 70 | 03:20 | `vpn`, `zugang` | `vpn` | Tunnel 7215, WireGuard 7222, NetBird 7223 |
-| 8 | Quellcode & CI | Git, Runner, Registry | 8000–8999 | 80 | 03:40 | `quellcode` | `quellcode` | Forgejo 8224, Runner 8225 |
-| 9 | Labor | darf kaputtgehen | 9100–9999 | 90, `onboot=0` | **nie** | `lab` | `labor` | GNS3 9230 |
+**Prinzipien, die gelten (Ausgestaltung noch offen):**
+- **ID-Formel:** Die VMID setzt sich aus einer **Kategorie-Ziffer** und dem **letzten IP-Oktett** zusammen (Entwurf: `Kategorie × 1000 + Oktett`). IP und ID verraten sich also gegenseitig.
+- **Kategorien** teilen Dienste nach Aufgabe ein. Entwurf: Unterbau/Knoten, Netzdienste, Verwaltung & Überwachung, Automatisierung, Identität & Geheimnisse, Speicher & Sicherung, Anwendungen, Fernzugang, Quellcode & CI, Labor.
+- **Aus der Kategorie folgt alles Weitere:** Startreihenfolge, Sicherungsfenster, Pool und Monitoring-Rolle werden per Formel abgeleitet und nicht einzeln vergeben. Das Labor wird nicht gesichert und startet nicht automatisch.
+- **Zweifelsfall „Wer benutzt es?“:** Nutzt es ein Mensch, ist es eine Anwendung. Nutzt es ein anderer Dienst, gilt die Kategorie seiner Aufgabe. Nutzt es nur der Betreiber, gehört es zu Verwaltung & Überwachung.
+- **Startreihenfolge mit Begründung:** DNS zuerst → Überwachung → Automatisierung → Identität → Speicher → Anwendungen → Fernzugang zuletzt.
+- **IP-Grundsätze:**
+  1. VLAN = drittes Oktett.
+  2. Letztes Oktett = Rolle, in jedem VLAN gleich.
+  3. Standardport, wenn es einen gibt.
+- **Netzbereiche nach Art:** Ein Bereich ist für Infrastruktur (läuft immer), einer für Endgeräte (Menschen, DHCP), einer für intern/virtuell (verlässt den Wirt nie). Dazu kommen weitere private Bereiche. Die konkreten Präfixe sind noch nicht festgelegt.
+- **Namensschema:** `<wirt>-<aufgabe>-<art>`.
+  - `wirt` ist der Knoten, auf dem der Gast heute läuft.
+  - `aufgabe` ist ein Wort, klein geschrieben, ohne Umlaute und ohne Bindestrich. Es beschreibt die Funktion, nicht das Produkt.
+  - `art` ist `lxc` oder `vm`.
+  - Merksatz: **Was sich ändern kann, gehört in den Namen; was für immer gilt, in die Zahl.** Zieht ein Gast um, ändert sich der Name, die ID bleibt.
 
-- **Abgeleitet:** `order = K × 10`, Backup-Fenster `01:00 + K × 20 min`. Wartezeiten `up=30` für Knoten, `up=15` für Datenbanken.
-- **Zweifelsfall:** Nutzt es ein Mensch, ist es K 6. Nutzt es ein anderer Dienst, gilt die Kategorie der Aufgabe. Nutzt es nur der Betreiber, ist es K 2.
-- **Warum diese Startreihenfolge:** DNS → Überwachung → Automatisierung → Identität → Speicher → Anwendungen → Fernzugang zuletzt.
-- Prometheus-`rolle` ist nur teils belegt (`dns`, `vpn`, `quellcode`, `identitaet`). Der Rest ist ein Vorschlag.
-
-**Drei Grundsätze für IPs:**
-1. **VLAN = drittes Oktett.**
-2. **Letztes Oktett = Rolle**, in jedem VLAN gleich: `.17` ist überall ein Wirt, `.55` ein Kerndienst, `.120` eine Anwendung.
-3. **Standardports**, wenn es einen gibt.
-
-**VLAN-Regel:** VLAN N gibt es in drei Netzbereichen:
-- `10.0.N.0/24` = Infrastruktur (Verwaltung, Server, Speicher, Fernzugang, DMZ, Transit)
-- `192.168.N.0/24` = Endgeräte und Rand (Laptop, Handy, Gäste, IoT; bekommen DHCP)
-- `172.16.N.0/24` = intern/virtuell (Labor, SDN; verlässt den Wirt nie)
-
-Dazu kommen weitere private Bereiche. Die Beispiel-IPs der Gäste liegen aktuell in `192.168.178.x` (FRITZ!Box-Netz), z. B. Pi-hole `192.168.178.217`.
-
-**Namensschema für Gäste:** `<wirt>-<aufgabe>-<art>`, z. B. `net-pihole-lxc`.
-- `wirt` ist die Kurzform des Knotens, auf dem der Gast **heute** läuft: `main` · `mgmt` · `net` · `net2` · `ki` · `lab`. Proxmox-Knoten heißen `pve-<wirt>` (z. B. `pve-mgmt`, VMID 201).
-- `aufgabe` ist ein Wort, klein geschrieben, ohne Umlaute und ohne Bindestrich. Es beschreibt die Funktion, nicht das Produkt.
-- `art` ist `lxc` oder `vm`.
-- Merksatz: **Was sich ändern kann, gehört in den Namen; was für immer gilt, in die Zahl.** Zieht ein Gast um, ändert sich der Name, die VMID bleibt.
-
-**Für das Diagramm-Tool relevant**, wenn es einmal Max' Lab zeigt: CT/VM-IDs sind dann vierstellig (die Chips zeigen heute `CT 149`, Breite prüfen). Gruppierung und Farbe nach Kategorie 0–9 bieten sich an. Hostnamen folgen `wirt-aufgabe-art`, VMID und Oktett lassen sich gegenseitig ableiten (und prüfen).
+**Für das Diagramm-Tool relevant**, wenn es einmal Max' Lab zeigt: IDs werden dann länger (die Chips zeigen heute `CT 149`, Breite prüfen). Gruppierung und Farbe nach Kategorie bieten sich an. Hostnamen folgen dem Namensschema. ID und Oktett lassen sich gegenseitig ableiten und prüfen.
 
 **Wichtig für die Arbeit am Tool:** Das alles ist Hintergrundwissen für Ideen und für später, etwa wenn das Diagramm einmal Max' eigenes Lab zeigen oder Features wie Reifegrad-Anzeige, mehrere Nodes, Offsite-Standorte oder deutsche Beschriftung bekommen soll. **Nicht von selbst umsetzen.** Erst wenn Max es als Aufgabe gibt.
