@@ -475,7 +475,7 @@ def ip_table(x, y, w, ncol, hosts=False, draw=True):
                    14, TEXT, 600)
             S.text(cx_ + cw_ - 12, yy + 18, v["subnet"], 12, TEXT, 500, "end", mono=True)
             free = net(v["key"]).num_addresses - 2 - n
-            S.text(cx_ + 16, yy + 35, f"{n} used · {free} free", 11.5, MUTED, 400)
+            S.text(cx_ + 16, yy + 35, "continued from the left" if cont else f"{n} used · {free} free", 11.5, MUTED, 400)
             yy += IPT_HEAD - 8
             for k, e in enumerate(rows):
                 ry = yy + k * IPT_ROW
@@ -1109,7 +1109,7 @@ if IP_MODE == "sheet":
           f'<circle cx="1.5" cy="1.5" r="1.3" fill="{GRID}"/></pattern></defs>')
     S.rect(0, 0, W, H, rx=0, fill=BG, stroke=BG, sw=0)
     S.rect(0, 0, W, H, rx=0, fill="url(#dots)", stroke="none", sw=0)
-    S.text(40, 86, title + " · IP addresses", 46, TEXT, 700, ls=-0.5)
+    S.text(40, 86, title, 46, TEXT, 700, ls=-0.5)
     S.text(W - 40, 74, meta["watermark"], 21, REDDIT, 700, "end")
     S.text(W - 40, 100, meta["date"], 16, MUTED, 400, "end")
     ip_table(40, SH_Y, W - 80, SH_COLS, hosts=True)

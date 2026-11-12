@@ -89,7 +89,11 @@ cd homelab-diagram-main
 python3 fetch_icons.py          # Icons laden (einmal; dauert hier lange, s. u.)
 python3 build.py                # → out/homelab.svg + out/homelab.png (geschwärzt)
 python3 build.py --unredacted   # → out/homelab-unredacted.*
+python3 build.py --ips=table    # IP-Varianten: table | inline | both | sheet → out/homelab-ips-<variante>.*
+python3 build.py --variants     # alle Varianten auf einmal (Standard + 4 IP-Varianten)
 ```
+
+**IP-Liste:** `collect_ips()` sammelt jede genutzte Adresse aus der YAML (Karten, Gäste, DMZ, OPNsense `.1` je Trunk-VLAN) plus `ip_extra` (Adressen ohne eigene Karte, z. B. VPN-Peers). Doppelt vergebene IPs werden rot markiert. `table` = Liste unter terra (Canvas wird höher), `inline` = volle IPs auf den DMZ-Chips, `both` = beides, `sheet` = Liste als eigenes Bild mit Hostnamen. Ohne `--ips` bleibt das Bild unverändert.
 
 Abhängigkeiten: Python 3 + PyYAML + Pillow, `rsvg-convert` (librsvg) und die Fonts **Fira Sans** und **Fira Code**. Ohne Fira Sans stimmen alle Textbreiten nicht.
 

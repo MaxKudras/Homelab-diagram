@@ -41,6 +41,8 @@ On Debian/Ubuntu: `apt install python3-yaml python3-pil librsvg2-bin fonts-firac
 python3 fetch_icons.py          # downloads the service icons into icons/ (once)
 python3 build.py                # → out/homelab.svg + out/homelab.png (redacted)
 python3 build.py --unredacted   # → out/homelab-unredacted.svg + .png
+python3 build.py --ips=table    # + list of every IP in use (table | inline | both | sheet)
+python3 build.py --variants     # render the default and all IP variants
 ```
 
 The service icons are **not** in this repo, `fetch_icons.py` downloads them from [homarr-labs/dashboard-icons](https://github.com/homarr-labs/dashboard-icons). Only my own small glyphs (`icons/glyph-*.svg`: CPU, RAM, SSD, …) are included.
