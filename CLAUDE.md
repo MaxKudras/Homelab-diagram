@@ -105,7 +105,9 @@ fc-cache -f
 
 Einen apt-Paket für Fira Sans gibt es hier nicht. ImageMagick heißt hier `convert`, nicht `magick`.
 
-**Icons:** `cdn.jsdelivr.net` wird vom Proxy dieser Umgebung blockiert (403 beim Tunnel). `fetch_icons.py` fällt dann auf `raw.githubusercontent.com` zurück, wartet aber pro Icon erst die Retries ab. Deshalb dauert der Download mehrere Minuten, also im Hintergrund laufen lassen.
+**Icons:** `cdn.jsdelivr.net` wird vom Proxy dieser Umgebung blockiert (403 beim Tunnel). `fetch_icons.py` fällt dann auf `raw.githubusercontent.com` zurück, wartet aber pro Icon erst die Retries ab. Deshalb dauert der Download etwa 6–7 Minuten (63 Icons), also im Hintergrund laufen lassen.
+
+**Geprüft am 12.11.2026:** Mit diesem Setup rendert der unveränderte Stand fehlerfrei. Gegenüber `docs/example.png` liegt die mittlere Pixelabweichung bei ~0,9/255. Das ist nur Kantenglättung bzw. Font-Version, Layout und Inhalt sind identisch. Diese Abweichung ist also normal und kein Fehler.
 
 ---
 
