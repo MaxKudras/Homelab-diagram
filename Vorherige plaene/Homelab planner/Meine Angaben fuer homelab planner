@@ -1,0 +1,148 @@
+1 · Wie du arbeiten willst
+
+Lieferung
+
+Ergebnisse als echte, eigenständige HTML-Datei, die du im Browser und am Handy öffnen kannst.
+Kein Artifact.
+
+Sprache und Benennung
+
+Alles auf Deutsch.
+Benennung: Funktion als Hauptname, der Mythologie-Name nur klein daneben.
+
+Stil
+
+Overengineered, und zwar egal, was du sagst: immer weiter, ausführlicher und durchdachter.
+Trotzdem nicht unnötig: jede Komplexität muss einen Zweck haben.
+Lieber viel und vielfältig als wenige ausgewählte Vorschläge.
+Optisch cool, schön und informativ, aber nicht eng oder überladen: klare Linien, man muss sehen, wo eine Verbindung hingeht.
+
+Bedienung
+
+Nicht durch viele Bereiche klicken müssen.
+2 · Das Planungs-Tool „Neun Welten“
+Allgemein
+Das ganze Tool deutlich cooler machen.
+Overengineeren, mehrfach ausdrücklich gewünscht.
+Weltenkarte
+Mehrere Ansichten.
+Klick zoomt hinein und zeigt die Punkte direkt in der Grafik.
+Quests
+Einklappbar.
+Annehmbar, und man sieht, welche gerade laufen (z. B. „Dienste recherchieren“).
+Mehr Elemente wie Ragnarök.
+Fähigkeitenbaum
+Nicht gequetscht, mit vielen Ansichten.
+Roadmap
+Bearbeitbar und einklappbar.
+Bauanleitung
+Erweitert um viele Szenarien, z. B. Monitoring, Automatisierung, Backup.
+Diagramme
+Viel mehr Diagrammansichten.
+Bestehende nicht überarbeiten, sondern neue dazu bauen, damit du hin- und herwechseln und später entscheiden kannst, welche weg dürfen.
+Richtig viele zu allen Bereichen: Diagramme, Karten, visuelle Anzeigen.
+Geräte (deine Fragen)
+Sollen Monitoring, Automatisierung und Backup-Verwaltung auf dem Management-Node laufen?
+Soll Smart Home auf den Management-Node?
+Welche Geräte fehlen noch?
+Welche Geräte brauchen ein Ersatz- oder Backup-Gerät, und gilt das für alle Dienste oder nur für die kritischen?
+Netz & IP
+Mehrere private Adressbereiche, z. B. ein 10er-Netz für das eine, ein 192er-Netz für das andere, overengineered.
+Ressourcen
+Kosten pro Monat pro Gerät.
+Mehr Planung insgesamt.
+Risiken
+Mehr Risiken.
+Glossar
+Viel mehr Begriffe, eigentlich jeder Begriff.
+Erklärungen auch für Nicht-ITler.
+Einklappbare Beispiele.
+Spielsystem (Gamification)
+Aufbau wie ein Skilltree mit Stufen: Task → Quest → Mission bzw. Nebenquest → Hauptmission (Pflicht).
+Beispiel-Kette: Netzwerk einrichten → Firewall → Unterpunkte.
+Freischalten: Bestimmte Kombinationen von erledigten Dingen schalten neue Stufen im Skilltree frei.
+Vorschau: Bei jeder Quest sehen, was sie freischalten würde, damit du danach entscheiden kannst.
+Belohnungen: Erfolge, Trophäen, Abzeichen in verschiedenen Arten und Stufen, jede mit eigener Bedeutung und eigenem Ziel.
+Den Skilltree und das ganze Spielsystem overengineeren.
+Alles Wichtige auf einem Tab
+Ein Gerät einrichten und ein paar Dienste darauf setzen.
+Für die wichtigsten Dienste schnell entscheiden, mehrere Entscheidungen nebeneinander, ohne dass eine offene Entscheidung alles blockiert.
+Dienste, die zu 99,99 % nicht passen, schnell ablegen.
+Schnell Fahrt aufnehmen und Schritt für Schritt einrichten und planen: was du brauchst und warum.
+Speichern
+Entscheidungen sollen am nächsten Tag noch da sein.
+Am liebsten direkt in der HTML-Datei gespeichert, nicht nur im Browser-Cache.
+Falls das nicht geht: erklären, warum, damit du es eventuell selbst beheben kannst.
+Aus der Ideenliste ausgewählt
+Konflikt-Erkennung
+Bündel-Entscheidungen
+Drag & Drop von Diensten auf Geräte, als eigene Ansicht mit den Icons der Dienste
+Kabel- & Port-Plan
+Proxmox-Bauplan
+DNS-Eintrags-Liste
+Isometrisches 3D-Rack
+Raumplan / Grundriss
+Paketreise-Animation
+OSI-Schichten-Ansicht
+Backup-Datenfluss pro Datentyp
+Port-Matrix
+Stacks & Erweiterungen
+Deine Stacks sehen, z. B. IP-Stack, Website-Stack, Monitoring-Stack, DevOps-Stack, Automatisierungs-Stack, KI-Stack, Sicherheits-Stack.
+Pro Stack sehen, welche Teile du weiter planen musst oder kannst und was noch fehlt.
+Fehlende Erweiterungen sehen, z. B. Docker → Portainer oder Ansible → Semaphore, damit du genau weißt, was du noch planen musst, um es vollständig zu haben.
+Wohnung
+Ein Bereich, um alles in der Wohnung genau zu planen und zu sehen, wo was steht: Tisch, Fernseher, Bett, Pflanzen, Lampen, Stühle und alles andere Wichtige.
+Overengineered und richtig cool.
+Danach: noch besser, noch overengineerter, cooler, schöner und genauer, sodass man genau sieht, was was ist.
+Weitere Ideen
+Du wolltest eine zweite Liste mit Ideen, was du noch gebrauchen könntest. Daraus hast du noch nichts ausgewählt.
+3 · Rahmen deines Homelabs
+Privates Homelab, als komplette eigene Infrastruktur, möglichst alles selbst gehostet.
+Kostengünstig: Hardware gebraucht und unspezialisiert, passend für deine Zwecke.
+Es soll alle Dienste haben, die du brauchst, wirklich alle.
+Proxmox auf jedem Server.
+Zum Plan gehören auch Game-Server und ein separates Experimentier-Gerät.
+4 · Geräteplanung: deine Vorgaben
+Grundforderungen
+Nicht alles auf einem Gerät, z. B. einem alten PC:
+Das braucht zu viele Ressourcen.
+Fällt das Gerät aus, ist z. B. auch das Monitoring weg.
+Manche Dienste müssen auf ein eigenes Gerät, z. B. weil sie auch dein Haus-WLAN verwalten.
+Manche Dienste müssen redundant sein.
+Für jedes Gerät soll drinstehen:
+was darauf läuft
+warum du es brauchst
+warum es ein eigenes Gerät sein soll
+Dein Schwerpunkt sind die Geräte, auf denen Dienste laufen, weniger die reine Netz- und Strom-Hardware.
+Erweiterungen, die du verlangt hast
+Die 8 Regeln erweitern.
+Zeigen, welche weiteren Dienste am besten getrennt laufen, damit sie weiterlaufen, egal was ausfällt, und dir das einen Vorteil bringt.
+Manche Geräte sollen gar nicht mit dem Internet verbunden sein, andere schon.
+Mehrere verschiedene Arten von NAS, an verschiedenen Orten.
+Logisch nach Zweck aufgeteilt. Dienste mit einem bestimmten Zweck sollen:
+diesen Zweck auch erfüllen, wenn andere Geräte ausfallen,
+anderen Geräten weiterhelfen können,
+oder gar nicht für andere Dienste da sein, sondern für etwas anderes.
+Alles durchgemanagt und durchdacht.
+Deine Bewertungen
+Punkt	Deine Meinung
+Firewall & Router auf einem Gerät	gut
+Core-Switch, Schreibtisch-Switch, Access Points	ok
+USV, Mobilfunk-Backup, Rack & Strom	ok
+Workload-Node	gut
+Wächter-Node	gut
+DNS-Pi	gut
+Smart-Home-Box	gut
+Pi-hole auf dem Management-Node	komisch. Es sollte getrennt laufen, weil es auch dein Zuhause versorgt
+Deine offenen Fragen (beantwortet in der letzten Nachricht)
+Ersatz-Firewall: Wie hilft sie, wenn bei einem Ausfall des Firewall-und-Router-Geräts doch trotzdem kein Internet da ist?
+Quorum-Pi: Was ist das?
+Pi-hole auf 2 Geräten: Wie soll das funktionieren?
+5 · Aktueller Stand nach deinen Angaben
+Fundament: Firewall & Router auf einem Gerät. Joker-Boxen als Ersatz statt einer eigenen Ersatz-Firewall. Pi-hole getrennt auf 2 DNS-Pis. Quorum-Pi als Schiedsrichter für den Cluster.
+Beobachtung: Wächter-Node mit Monitoring, Alarmen, Sicherheitsüberwachung und WLAN-Controller.
+Haus: Eigene Smart-Home-Box.
+Cluster: Kern-Node für Identität, Passwörter, Git und Automatisierung. Workload-Node für Apps, Medien, KI und n8n.
+Speicher: Medien-NAS, Tresor-NAS, Backup-Server ohne Internet, Offsite-NAS bei Familie, verschlüsselter Cloud-Tresor, Rotationsplatten.
+Exponiert & Spezial: DMZ-Node, Game-Node, Lab-Node, GPU-Node (später), VPS als Wächter von außen.
+Internet: 5 Zonen, von „nie verbunden“ bis „von außen erreichbar“.

@@ -1,0 +1,225 @@
+HOMELAB-MASTERPLAN – WAS ICH WILL (ALLES AUS DEM CHAT, GEORDNET)
+Stand: 12.11.2026
+
+Abschnitte 1–7: meine eigenen Angaben aus dem Chat.
+Abschnitt 8: Rahmen aus früheren Gesprächen, der schon in die Planung eingeflossen ist.
+Abschnitt 9: was bisher entstanden ist und was noch offen ist.
+
+======================================================================
+1. ZIEL
+======================================================================
+- Ich plane mein Homelab bewusst overengineert und will jeden einzelnen
+  Aspekt durchplanen.
+- Ich will für jeden Bereich meines Lebens einen Dienst eingeplant haben.
+- Wenn mich jemand fragt, ob ich so einen Dienst schon habe, will ich
+  sagen können: „Ja, habe ich eingeplant“ – und dazu, ob mir dieser Dienst
+  wichtig war oder nicht.
+- Ich will alles haben, was ich brauche, um besser zu planen, zu verwalten
+  und zu arbeiten – und damit besser an mein Ziel zu kommen.
+
+Kontext:
+- Ich habe für alle Aspekte meines Lebens schon sehr viele Punkte geplant –
+  wirklich für alles.
+- Deshalb soll auch hier alles richtig overengineert sein.
+
+======================================================================
+2. AUSGANGSLAGE
+======================================================================
+- Ich habe bereits eine overengineerte Homelab-HTML-Seite.
+- Die finde ich viel zu unstrukturiert – deshalb plane ich hier neu und
+  weiter.
+- Es ist ein privates Homelab, das zu Hause mit alten Geräten läuft,
+  privat und kostenlos.
+
+======================================================================
+3. GRUNDPRINZIP: VIELE SCHICHTEN, VIELE SCHRITTE
+======================================================================
+- Ich will die Planung in richtig vielen Schichten und in richtig vielen
+  Schritten machen.
+- Die Dienste – oder zumindest die Funktion der Dienste zusammen mit den
+  Diensten – sollen aufgelistet und auf Schichten verteilt sein, zum
+  Beispiel auf 100 Schichten.
+
+Was die Schichten bedeuten sollen:
+- Schicht 1 ist das Wichtigste: was ich garantiert brauche, was ich als
+  Erstes planen sollte und womit man beim Aufbau eines Homelabs am besten
+  startet – die Dienste, mit denen man anfängt und von denen aus man
+  weiterarbeitet.
+- Die kleinsten Schichtnummern sind Dinge, die zuerst gemacht werden
+  sollten: fundamental, ein wichtiger Dienst für den Anfang, der richtig
+  viele hilfreiche Features freischaltet.
+- Von Stufe 1 aus will ich mein Fundament immer weiter aufbauen und immer
+  strukturierter machen.
+- Ich will nicht etwas planen, das eigentlich unwichtig ist und erst gegen
+  Ende kommen sollte.
+- Die Sortierung soll so sein, dass unwichtige Sachen ganz hinten stehen.
+
+Benennung:
+- Zuerst will ich herausfinden, wie ich die Punkte spezifischer benenne,
+  die ich wirklich haben will.
+
+======================================================================
+4. PRIVAT VS. RECHENZENTRUM
+======================================================================
+- Ich brauche nicht alle Features eines Rechenzentrums – zum Beispiel muss
+  ich nicht mit Kunden reden.
+- Trotzdem will ich alle Features haben und gut durchgeplant, obwohl alles
+  zu Hause, privat und kostenlos läuft.
+- Für manche Systeme will ich trotzdem Hochverfügbarkeit und ähnliche
+  Dinge.
+
+======================================================================
+5. VORGEHEN IN SCHRITTEN
+======================================================================
+- Schritt 1: komplett und richtig gut definieren und planen, wie die
+  Schichten aufgebaut werden – inklusive der Sortierung (Wichtiges und
+  Fundamentales vorne, Unwichtiges hinten).
+- Meine Anforderung soll komplett analysiert werden.
+- Es soll komplett durchgeplant werden, welche Schritte ich insgesamt
+  machen muss.
+- Ein späterer Schritt ist, die einzelnen Schichten durchzuplanen und
+  durchzuarbeiten.
+- Jetzt: erst einen guten Plan erstellen und alle nötigen Schritte
+  ausarbeiten.
+
+======================================================================
+6. NEBENPROJEKT: FUNDAMENTE, REIFEGRADE, DIAGRAMME
+======================================================================
+Die Idee kam durch das Diagramm mit den übereinandergestapelten 10 Bändern.
+Ich will das als Nebenprojekt sofort umgesetzt haben.
+
+6.1 Fundament für den Gesamtplan
+- Das Fundament des Gesamtplans (die Fundamente der gesamten Liste) ist so,
+  wie es ist, schon richtig.
+- Ich will das Fundament für den Gesamtplan aber zusätzlich einteilen in
+  Grundfundamente, zum Beispiel:
+    * Geräte-Grundfundament – z. B. SSH-Key
+    * Strom-Grundfundament – erst nur Strom, später USV und Messsteckdosen
+    * Netzwerk-Grundfundament – danach das Netz
+
+6.2 Geräte-Reifegrad
+- Ich will ein eigenes Modell für den Reifegrad von Geräten
+  (z. B. SSH-Key, Netz).
+- Ursprüngliche Idee: unter „Boden“ eine unterste Schicht, die nur über die
+  Geräte geht.
+
+6.3 Dienst-Reifegrad
+- Ich will eine Dienst-Reifegrad-Tabelle, in der ich einteilen kann, in
+  welchem Schritt ein Dienst ist, und in der ich sehe, wie fertig der
+  Dienst ist.
+
+6.4 Mehr als nur Reifegrad
+- Beides – Geräte- und Dienst-Reifegrad – soll noch overengineerter werden.
+- Nicht nur Reifegrad, sondern overengineert alles, was ich dafür brauche.
+
+6.5 Diagramm nur für Dienste
+- Ich will ein eigenes Diagramm nur mit Diensten – mit eigenen Bereichen
+  für fundamentale Dienste usw.
+- Ein Bereich für das, was auf jedem meiner Geräte läuft: Proxmox. Wie
+  dieser Bereich heißen soll, wusste ich nicht.
+- Danach brauche ich Netzwerk.
+- Dieser Bereich (Proxmox, Netzwerk usw.) könnte vielleicht auch
+  „Fundament“ heißen.
+- Danach kommt ein Bereich „Reifegrad“ mit Dingen wie Hochverfügbarkeit,
+  Monitoring, Backup, Automatisierung.
+
+6.6 Reifegrad-Dienste
+- Reifegrad-Dienste sind für mich Dienste, die von fast allen – wenn nicht
+  allen – anderen Diensten gebraucht werden.
+- Beispiele: Alarmierung, Monitoring, Automatisierung, Daten, Backup,
+  vielleicht auch der Passwortmanager.
+
+6.7 Weitere Kategorien
+- Falls es weitere Kategorien wie Reifegrad für andere Dinge gibt, will ich
+  die auch.
+
+6.8 Viele weitere Diagramme
+- Ich will viele weitere Diagramme, damit ich besser weiß, wie ich planen
+  soll.
+- Ich will darin sehen: wie was strukturiert ist, wo was liegt, was ich
+  wofür brauche.
+- Die Diagramme sollen sich zum Ansehen, Verwalten, Planen und Arbeiten
+  eignen.
+
+======================================================================
+7. DIESE ZUSAMMENFASSUNG
+======================================================================
+- Ich will einen Text, der alle meine Angaben strukturiert und geordnet
+  wiedergibt und in dem alles steht, was ich im ganzen Chat wollte.
+- Als Textdatei.
+
+======================================================================
+8. RAHMEN AUS FRÜHEREN GESPRÄCHEN
+======================================================================
+(Nicht in diesem Chat gesagt, aber schon bekannt und in beide Dokumente
+eingeflossen.)
+
+Form der Ergebnisse:
+- Pläne und Ausarbeitungen will ich als eigenständige HTML-Datei, die ich
+  im Browser und auf dem Handy öffnen kann.
+
+Hardware & Aufbau:
+- Auf jedem meiner Server läuft Proxmox; der erste Node heißt PVE1
+  (alter PC).
+- Ein alter Laptop wird NAS. Ich will mehrere NAS an verschiedenen Orten,
+  manche Geräte gar nicht mit dem Internet verbunden.
+- Gewünschte Geräte-Rollen: Firewall + Router als ein Gerät, Workload-Node,
+  Wächter-Node (Monitoring getrennt), DNS-Pi (Pi-hole auf eigenem Gerät,
+  nicht auf dem Management-Node), Smart-Home-Box, Management-Node (noch
+  anzuschaffen).
+- Dienste sollen auf mehrere Geräte verteilt werden, manche redundant.
+- Hardware wird günstig und unspezialisiert besorgt; auf allen
+  Linux-Geräten läuft Debian.
+- WireGuard zum VPS Yggdrasil (dort laufen u. a. Traefik, n8n, PostgreSQL).
+
+Eingeplanter Stack:
+- Proxmox-Cluster, Docker, Ansible, Gitea, Vaultwarden, NetBox,
+  Backup-Management, n8n, Ollama, Nextcloud (installiert), Pi-hole,
+  PowerDNS (Authoritative/Reverse + Recursor), Traefik, Paperless, mehrere
+  Datenbanken.
+- Noch überlegt: OpenTofu, Kubernetes.
+- Dazu: Game-Server und ein separates Experimentier-Gerät
+  (z. B. Containerlab).
+- Patch-Management über mein Projekt Packagelist (Ansible).
+
+Prinzipien:
+- Möglichst alles selbst gehostet und kostenlos.
+- Benennung: Funktion als Hauptname, Mythologie-Name nur klein daneben
+  (Hardware/Netzwerk nordisch).
+
+======================================================================
+9. WAS DARAUS ENTSTANDEN IST & WAS OFFEN IST
+======================================================================
+Entstanden:
+- Dokument 01 – Schichtenmodell + Fahrplan:
+  100 Schichten in 10 Bändern, Reifegrade R0–R5, Kritikalitäts-Tiers,
+  Score, Sortieralgorithmus, Regeln, Steckbrief-Schema, Entscheidungsstatus
+  (inkl. „bewusst nicht“) und 25 Planungsschritte. Schritt 1 ist in Arbeit.
+- Dokument 02 – Reife-Atlas (Nebenprojekt):
+  drei Türme (Plan, Geräte, Dienste), Geräte-Reife G0–G14 mit 16 Strängen
+  (Strom: Steckdose → Messsteckdose → USV), Dienste-Turm E0–E6
+  (Proxmox-Bereich = „Substrat“), Reifegrad-Dienste mit Matrix,
+  Dienst-Reife mit 17 Dimensionen, 14 weitere Reifegrad-Modelle und
+  27 Diagramme, davon 5 interaktiv.
+
+Offen – braucht meine Antwort
+(Vorschläge, noch nicht bestätigt; Empfehlung jeweils „Ja“):
+- E1  Feste 100 Schichten (10 × 10)?
+- E2  Ein Eintrag = Funktion × Reifegrad?
+- E3  Lernwert normal gewichten?
+- E4  Schicht 0 mit Notfall-Zugängen?
+- E5  VPS Yggdrasil als eigener Standort?
+- E6  Höchstens 5 Einträge pro Schicht?
+- E7  Name „Reifegrad-Dienste“ behalten?
+- E8  Nachzieh-Schicht am Ende jedes Bands?
+- E9  „Nicht anwendbar“ erlauben?
+
+Nächster Schritt 2 – dafür brauche ich:
+- alle Geräte mit Specs
+- Netzwerk-Hardware
+- Internetanschluss (öffentliche IPv4 oder DS-Lite/CGNAT, IPv6)
+- Standorte
+- Zeit pro Woche
+- Budget
+- wer die Dienste mitnutzt
+- Prüfungs- und CCNA-Termine
