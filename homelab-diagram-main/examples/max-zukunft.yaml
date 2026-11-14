@@ -307,6 +307,7 @@ links:
   - {a: kvm, b: ai, kind: kvm}
   - {a: kvm, b: lab, kind: kvm}
 
+port_forwards_note: "Portweiterleitungen auf der Firewall · CrowdSec filtert zuerst"
 port_forwards:
   - {port: "51820", proto: "UDP", to: "WireGuard", what: "Fernzugriff + VPS-Tunnel"}
   - {port: "443", proto: "TCP", to: "Traefik", what: "nur über Cloudflare-IPs"}
@@ -316,3 +317,19 @@ ip_extra:
   - {vlan: "vpn", ip: ".10", name: "Laptop", kind: "peer"}
   - {vlan: "vpn", ip: ".11", name: "Handy", kind: "peer"}
   - {vlan: "vpn", ip: ".20", name: "VPS Yggdrasil", kind: "peer"}
+
+# generic flow panel (right column): Max' backup concept in three stages
+panels:
+  - type: flow
+    title: "Backup-Fluss"
+    sub: "lokal → Backup-NAS → wichtigster Teil gespiegelt"
+    cols: 2
+    nodes:
+      - {id: local, name: "Lokal auf dem Gerät", sub: "schnell zurückspielen", icon: glyph-ssd, row: 0, col: 0}
+      - {id: pbs, name: "Backup-NAS", sub: "alle Backups · Pull", icon: pbs, row: 0, col: 1}
+      - {id: nas1, name: "NAS 1", sub: "20 % · Backup-Kern", icon: omv, row: 1, col: 0}
+      - {id: nas2, name: "NAS 2", sub: "Spiegel von NAS 1", icon: omv, row: 1, col: 1}
+    edges:
+      - {a: local, b: pbs, label: "nachts"}
+      - {a: pbs, b: nas1, label: "das Wichtigste"}
+      - {a: nas1, b: nas2, label: "ZFS-Spiegel"}

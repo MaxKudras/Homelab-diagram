@@ -5,6 +5,10 @@ ID_KEYS = ("id", "key", "name")
 
 
 def _id(o):
+    if isinstance(o, dict) and "a" in o and "b" in o:      # a link: identified by its two ends
+        return ("link",) + tuple(sorted((str(o["a"]), str(o["b"]))))
+    if isinstance(o, dict) and "ip" in o and "name" in o and "id" not in o:   # ip_extra entry
+        return ("ip", str(o["ip"]))
     if isinstance(o, dict):
         for k in ID_KEYS:
             if k in o:

@@ -10,6 +10,7 @@ Nichts davon ist schon umgesetzt, außer es steht ausdrücklich „erledigt“ d
 | Was | Ergebnis |
 |---|---|
 | Alle genutzten IPs im Diagramm | 4 Varianten: `--ips=table` (Liste unter dem Server), `inline` (volle IPs auf den Karten), `both`, `sheet` (eigenes Bild). `--variants` rendert alle. Doppelte IPs werden rot. |
+| **Version 2 der Engine** (14.11.2026) | Paket `hld/`: keine festen Positionen mehr, beliebig viele Geräte/Switches/Firewalls/Server, Kabel-Router, Umbruch, Redundanz-Paare, Datenprüfung (A2), exakte Textmessung (A8), Überlappungs-QA (A7), Status geplant/später gestrichelt (C3, D1), CT/VM aus den Daten (C10), Monitoring-Punkt (D9), allgemeines Flow-Panel, Datenquellen Ansible/NetBox/Proxmox/Prometheus/OPNsense mit `--collect` (M1, M2, M6–M8), Beispiel-Labs, Tests. Erledigt sind damit A2, A7, A8, B1–B8, C3, C10, D1, D9, M1, M2, M6, M7, M8. |
 | Schneller einrichten | `python3 setup.py` in ~4 s statt ~7 Min. Fonts liegen im Repo, Icons laden parallel. `python3 setup.py --check-fonts` prüft, ob es neuere Fonts gibt, `--update-fonts` holt sie. |
 
 ---

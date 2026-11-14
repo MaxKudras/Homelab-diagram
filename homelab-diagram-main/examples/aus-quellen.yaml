@@ -1,0 +1,19 @@
+# BEISPIEL: Diagramm komplett aus Datenquellen (NetBox, Proxmox, Ansible, Prometheus, OPNsense).
+# Hier steht nur, was keine Quelle weiß (Titel, Farben der Netze, Internet). Alles andere kommt aus
+# sources.example.yaml → tests/fixtures/. Mit echtem Lab: python3 build.py --collect
+schema: 2
+sources_demo: sources.example.yaml
+meta: {title: "Aus Quellen erzeugt", title_redacted: "Aus Quellen erzeugt", date: "Testdaten", watermark: "hld v2", domain: "example.org"}
+redact: {domain: true, domain_placeholder: "redacted.org", ssid_names: true}
+networks:
+  - {key: "10", color: "#e3b341", note: "Kern · Verwaltung"}
+  - {key: "20", color: "#58a6ff", note: "Kern · Dienste"}
+  - {key: "40", color: "#39c5cf", note: "Alltag"}
+  - {key: "50", color: "#3fb950", note: "Smart Home"}
+  - {key: "wan", tag: "FRITZ!Box", name: WAN, subnet: "192.168.178.0/24", color: "#f85149", note: "Uplink"}
+  - {key: "vpn", tag: WireGuard, name: VPN, subnet: "100.64.10.0/24", color: "#56d4dd", note: "Fernzugriff"}
+internet: {label: "Internet", sub: "aus den Quellen", speed: {down: "250 Mbit/s", up: "40 Mbit/s"}}
+remote:
+  - {name: "Fernzugriff", note: "Laptop + Handy · WireGuard", icon: wireguard, net: vpn}
+links:
+  - {a: fritzbox.lan1, b: heimdall.wan, speed: 1G, net: wan}

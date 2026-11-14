@@ -40,7 +40,7 @@ class Node:
         self.server = None
         self.pseudo = False
         n_icons = len(d.icons) or 1
-        hdr = parts.header_w(d, n_icons)
+        hdr = parts.header_w(d, n_icons) + (22 if d.extra.get("monitor") else 0)   # room for the status dot
         self.hdr = hdr
         if d.port_row and d.role == "isp_router":
             self.kind = "isp"
@@ -56,7 +56,7 @@ class Node:
         elif d.port_row:
             self.kind = "switch"
             self.size_switch(False)
-        elif d.role in INFRA_ROLES and (d.hw or d.services):
+        elif d.role in INFRA_ROLES:
             self.kind = "appliance"
             self.hw_w = max([200] + [parts.hw_tile_w(h) for h in d.hw]) if d.hw else 0
             self.sv_w = max([190] + [parts.service_tile_w(s) for s in d.services]) if d.services else 0
@@ -101,7 +101,7 @@ class Node:
         self.w = max(body, self.hdr + 30 + 2 * JACK_M + 48)
         rows_sv = -(-len(d.services) // ncol) if ncol else 0
         content = max(len(d.hw) * 64, rows_sv * 58)
-        self.h = 106 + content + 68
+        self.h = (106 + content if content else 96) + 68          # bottom band keeps room for the jacks
 
     def shrink(self):
         """Make the card narrower if it can. Returns True if something changed."""
@@ -302,6 +302,8 @@ class Renderer:
             f["share"] = True
         if any(d.status != "active" for d in lab.devices):
             f["planned"] = True
+        if any(d.extra.get("monitor") or any(g.extra.get("monitor") for g in d.guests) for d in lab.devices):
+            f["monitor"] = True
         return f
 
     # ---------------------------------------------------------------- cables
@@ -732,6 +734,7 @@ class Renderer:
         fill = "#141b25" if n.kind == "switch" else T.PANEL
         parts.device_card(S, n.x, n.y, n.w, n.h, d.icons, d, col, fill=fill, stroke=n.stroke(), dash=dash)
         x, y = n.x, n.y
+        parts.monitor_dot(S, d, x + n.w - 18, y + 18)
         if n.kind == "appliance":
             if d.hw:
                 S.text(x + 20, y + 96, "HARDWARE", 11.5, T.HWC, 700, ls=1.4)

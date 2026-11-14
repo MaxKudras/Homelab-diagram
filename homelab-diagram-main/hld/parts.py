@@ -91,6 +91,7 @@ def device_card(S, x, y, w, h, icons, d, color, fill=T.PANEL, stroke=None, sw=1.
     ix = x + 14
     for ic in icons:                      # icon spans the three body lines (full name … OS)
         S.icon(ic, ix, y + 15, 54)
+        S.reg_text(ix, y + 15, ix + 54, y + 69, "[icon]")
         ix += 58
     tx_ = ix + 8
     dy = 0 if d.os else 8                 # no OS line → center the two lines on the icon
@@ -332,6 +333,18 @@ def chip(S, g, x, y, w, ip_txt):
             S.pill(nx + measure(name, 11.5, 500, True) + 8, y + 44, "LAN", T.MUTED, 9.5, mono=True, pad=4, h=14)
     S.text(x + w - 12, y + 21, kind_id, 12, T.FAINT, 500, "end", mono=True)
     S.text(x + w - 12, y + 37, ip_txt, 11, T.FAINT, 500, "end", mono=True)
+    monitor_dot(S, g, x + w - 12, y + 52)
     if get(g, "docker"):
         docker_badge(S, x + 2, y + 2)
     return CH
+
+
+def monitor_dot(S, o, x, y):
+    """Small status dot: monitored by Prometheus and up (green) or down (red)."""
+    m = get(o, "monitor") or (get(o, "extra") or {}).get("monitor")
+    if not m:
+        return
+    col = "#3fb950" if m == "up" else "#f85149"
+    S.add(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="8" fill="{col}" opacity="0.18"/>'
+          f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4.2" fill="{col}"/>')
+    S.reg_text(x - 8, y - 8, x + 8, y + 8, "[status]")

@@ -210,6 +210,12 @@ class Lab:
         self.port_forwards = d.get("port_forwards", [])
         self.panels = d.get("panels", [])
         self.ip_extra = d.get("ip_extra", [])
+        for x in self.devices:                    # network from the IP when a source didn't say
+            if x.net is None and x.ip and not str(x.ip).startswith("."):
+                x.net = self.net_of_ip(str(x.ip).split(" ")[0])
+            for g in x.guests:
+                if g.net is None and g.ip and not str(g.ip).startswith("."):
+                    g.net = self.net_of_ip(g.ip)
 
     def color(self, key):
         n = self.net.get(str(key)) if key is not None else None

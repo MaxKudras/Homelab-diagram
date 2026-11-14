@@ -9,6 +9,7 @@ Usage:
   python3 build.py --variants            default + all IP variants
   python3 build.py --examples            every lab in examples/ → out/examples/<name>.png
   python3 build.py --collect             pull data from the sources in sources.yaml first
+                    [--sources=FILE]     (another sources file, e.g. sources.example.yaml)
   python3 build.py --no-qa               draw even if the overlap check finds problems
 
 Old versions: versions/vN/build.py (see versions/README.md).
@@ -40,6 +41,17 @@ def load(path):
     d = yaml.safe_load(pathlib.Path(path).read_text())
     if d.get("schema") != 2:
         d = legacy.convert(d)
+    if d.get("sources_demo"):                 # example built from data sources (fixtures)
+        from hld.sources import collect, merge
+        cfgs = yaml.safe_load((ROOT / d["sources_demo"]).read_text())["sources"]
+        for c in cfgs:
+            for k in ("fixture", "inventory"):
+                if c.get(k):
+                    c[k] = str(ROOT / c[k])
+        gen, report, errors = collect.gather(cfgs)
+        if errors:
+            raise SystemExit("Quellen: " + "; ".join(errors))
+        d = merge.merge(gen, d)              # the lab file (colors, titles) wins over the sources
     return d
 
 
@@ -48,12 +60,11 @@ def merged(path):
     d = load(path)
     gen = ROOT / "inventory.generated.yaml"
     ovr = ROOT / "overrides.yaml"
-    if path == str(ROOT / "inventory.yaml") or pathlib.Path(path).name == "inventory.yaml":
-        from hld.sources import merge
-        if gen.exists():
-            d = merge.merge(d, yaml.safe_load(gen.read_text()) or {})
-        if ovr.exists():
-            d = merge.merge(d, yaml.safe_load(ovr.read_text()) or {})
+    from hld.sources import merge
+    if gen.exists() and "--no-generated" not in sys.argv:
+        d = merge.merge(d, yaml.safe_load(gen.read_text()) or {})
+    if ovr.exists():
+        d = merge.merge(d, yaml.safe_load(ovr.read_text()) or {})
     return d
 
 
@@ -103,7 +114,7 @@ def main():
     check = "--no-qa" not in sys.argv
     if "--collect" in sys.argv:
         from hld.sources import collect
-        collect.run(ROOT)
+        collect.run(ROOT, arg("sources"))
     if "--examples" in sys.argv:
         for f in sorted((ROOT / "examples").glob("*.yaml")):
             render(load(f), f"examples/{f.stem}", unred, "none", check)

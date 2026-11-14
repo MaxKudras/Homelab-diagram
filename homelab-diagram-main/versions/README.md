@@ -11,3 +11,4 @@ python3 versions/v1/build.py --variants # alle IP-Varianten dieser Version
 | Version | Datum | Was |
 |---|---|---|
 | **v1** | 14.11.2026 | Original-Tool von u/goblinmine mit festem Layout (1 Firewall, 1 Switch, 4 Geräte, 1 Server) + IP-Liste (`--ips=table/inline/both/sheet`). |
+| **v2** | 14.11.2026 | Neue Engine `hld/`: beliebig viele Geräte, Switches, Firewalls und Server; Positionen und Kabelwege werden berechnet (Ebenen, Kabel-Router mit Spuren, Umbruch, Redundanz-Paare); Datenprüfung und Überlappungs-QA; Datenquellen Ansible, NetBox, Proxmox, Prometheus, OPNsense (`--collect`); Beispiel-Labs in `examples/` (`--examples`). |

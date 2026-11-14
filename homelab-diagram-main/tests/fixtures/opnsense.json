@@ -1,0 +1,38 @@
+{
+ "/api/dhcpv4/leases/searchLease": {
+  "rows": [
+   {
+    "address": "192.168.40.101",
+    "hostname": "max-handy",
+    "type": "dynamic"
+   },
+   {
+    "address": "192.168.50.120",
+    "hostname": "luftreiniger",
+    "type": "static"
+   },
+   {
+    "address": "192.168.50.121",
+    "hostname": "bambu-p1s",
+    "type": "static"
+   },
+   {
+    "address": "10.10.20.16",
+    "hostname": "valhalla",
+    "type": "static"
+   }
+  ]
+ },
+ "/api/wireguard/client/searchClient": {
+  "rows": [
+   {
+    "name": "Laptop",
+    "tunneladdress": "100.64.10.10/32"
+   },
+   {
+    "name": "Handy",
+    "tunneladdress": "100.64.10.11/32"
+   }
+  ]
+ }
+}

@@ -3,7 +3,6 @@ port forwards, flow panels (media pipeline). Each returns its height and can be 
 import math
 
 from . import theme as T
-from .parts import ticks
 from .text import fqdn, measure
 
 
@@ -113,7 +112,7 @@ LR = 27
 
 def legend_rows(feat):
     order = ["trunk", "access", "wan", "kvm", "wifi", "net", "speed", "public", "internal", "lan", "ticks",
-             "share", "planned"]
+             "share", "planned", "monitor"]
     return [k for k in order if k in feat]
 
 
@@ -174,6 +173,10 @@ def legend(S, lab, feat, x, y, w):
             t = "NAS share, bind-mounted"
         elif k == "planned":
             S.rect(SX, yy - 8, 40, 16, rx=4, fill="none", stroke=T.MUTED, sw=1.4, dash="5 4"); t = "planned, not built yet"
+        elif k == "monitor":
+            for jj, c in enumerate(("#3fb950", "#f85149")):
+                S.add(f'<circle cx="{SX + 6 + jj * 20}" cy="{yy}" r="4.2" fill="{c}"/>')
+            t = "monitored: up / down (Prometheus)"
         if t:
             S.text(TX, yy + 4.5, t, 13, T.MUTED, 400)
     return h
@@ -193,7 +196,9 @@ def forwards(S, lab, x, y, w):
     S.rect(x, y, w, h, rx=14, fill=T.PANEL, stroke=T.BORDER, sw=1.4)
     S.reg_card(x, y, w, h, "Open to the internet")
     S.text(x + 20, y + 34, "Open to the internet", 19, T.TEXT, 600)
-    S.text(x + 20, y + 56, "port forwards on the firewall · blocklist + CrowdSec drop bad IPs first", 12.5, T.MUTED, 400)
+    S.text(x + 20, y + 56, lab.raw.get("port_forwards_note",
+                                        "port forwards on the firewall · blocklist + CrowdSec drop bad IPs first"),
+           12.5, T.MUTED, 400)
     for i, r in enumerate(pf):
         yy = y + 72 + i * 44
         S.rect(x + 14, yy, w - 28, 38, rx=8, fill=T.CHIP, stroke=T.BORDER, sw=1)
@@ -303,7 +308,10 @@ def flow(S, lab, p, PX, PY, PW, draw=True):
     """Simple explainer: nodes in a grid (row, col), arrows with labels between them.
     p = {title, sub, cols: 3, nodes: [{id, name, sub, icon, row, col}], edges: [{a, b, label}]}"""
     cols = p.get("cols", 3)
-    G_ = 42
+    rowof = {n["id"]: n.get("row", 0) for n in p["nodes"]}
+    lw = [S.label_w(e["label"], 11) + 14 for e in p.get("edges", [])
+          if e.get("label") and rowof.get(e["a"]) == rowof.get(e["b"])]
+    G_ = max([42] + lw)                       # the gap fits the widest arrow label
     NW = (PW - 28 - (cols - 1) * G_) / cols
     NH = 58
     rows = max((n.get("row", 0) for n in p["nodes"]), default=0) + 1

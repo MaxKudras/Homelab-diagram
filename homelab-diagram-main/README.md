@@ -4,8 +4,11 @@ The script behind the network diagram of my homelab that I posted on r/homelab. 
 
 ![Example output](docs/example.png)
 
+> [!NOTE]
+> **Version 2 (fork):** the layout is no longer hand-placed. The engine in `hld/` places any number of devices, switches, firewalls and servers and routes the cables itself (tiers from the link graph, channel router with tracks, wrapping, redundant pairs), checks the data and the finished picture for overlaps, and can pull the data from Ansible, NetBox, Proxmox, Prometheus and OPNsense (`python3 build.py --collect`, see `sources.example.yaml`). The original lab still renders from `inventory.yaml`; more labs are in `examples/` (`python3 build.py --examples`). The original v1 is kept runnable in `versions/v1/`.
+
 > [!IMPORTANT]
-> **This is not a general tool.** The *content* comes from `inventory.yaml`, but the *layout* (where every box, port and cable goes) is hand-placed in `build.py` for exactly my network. If you want to use it for yours, expect to move coordinates around in the code. Think of it as a starting point, not a finished product.
+> **Original note (v1):** This is not a general tool. The *content* comes from `inventory.yaml`, but the *layout* (where every box, port and cable goes) is hand-placed in `build.py` for exactly my network. If you want to use it for yours, expect to move coordinates around in the code. Think of it as a starting point, not a finished product.
 
 > [!NOTE]
 > **The code was written by AI.** I built this together with Claude (Anthropic) in Claude Code. I described what I wanted and gave feedback on every render, Claude wrote and changed the code. A few example prompts are at the end of this README.
@@ -41,6 +44,9 @@ On Debian/Ubuntu: `apt install python3-yaml python3-pil librsvg2-bin fonts-firac
 python3 setup.py                # installs the fonts from fonts/, checks rsvg-convert, downloads the icons (once)
 python3 build.py                # → out/homelab.svg + out/homelab.png (redacted)
 python3 build.py --unredacted   # → out/homelab-unredacted.svg + .png
+python3 build.py --examples     # every lab in examples/ → out/examples/
+python3 build.py --collect      # pull data from the sources in sources.yaml first
+python3 -m unittest discover tests
 python3 build.py --ips=table    # + list of every IP in use (table | inline | both | sheet)
 python3 build.py --variants     # render the default and all IP variants
 ```
