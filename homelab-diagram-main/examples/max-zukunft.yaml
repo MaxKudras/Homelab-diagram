@@ -1,0 +1,318 @@
+# BEISPIELDATEN – kein echter Stand. Ein möglicher Ausbau nach Max' Angaben (Mini-Rack, redundante
+# Firewall + Switches, Workload-/KI-/Lab-/Management-Server, 2 gespiegelte NAS + Backup-NAS, Pis,
+# KVM-Switch, Desktop-Switch, IoT). IPs nach der Idee 10.x = Kern, 172.16.x = Lab/KI, 192.168.x = Alltag.
+# Dient als Test, dass die Engine viele Geräte und Verbindungen sauber zeichnet.
+schema: 2
+meta:
+  title: "Homelab · Zukunftsplan"
+  title_redacted: "Homelab · Zukunftsplan"
+  date: "Beispiel · November 2026"
+  watermark: "Neun Welten"
+  domain: "example.org"
+redact: {domain: true, domain_placeholder: "redacted.org", ssid_names: true}
+
+networks:
+  - {key: "10",  name: MGMT,    subnet: "10.10.10.0/24",    color: "#e3b341", note: "Kern · Verwaltung, nur Admin-Laptop + VPN"}
+  - {key: "20",  name: SERVER,  subnet: "10.10.20.0/24",    color: "#58a6ff", note: "Kern · interne Dienste"}
+  - {key: "30",  name: DMZ,     subnet: "10.10.30.0/24",    color: "#f0883e", note: "von außen erreichbar · nichts nach innen"}
+  - {key: "70",  name: STORAGE, subnet: "10.10.70.0/24",    color: "#a5d6ff", note: "Kern · NFS/SMB, Replikation, kein Internet"}
+  - {key: "100", name: CLUSTER, subnet: "10.10.100.0/24",   color: "#d2a8ff", note: "Kern · Corosync + Quorum, kein Gateway"}
+  - {key: "80",  name: LAB,     subnet: "172.16.80.0/24",   color: "#ff7eb6", note: "dazwischen · darf kaputtgehen"}
+  - {key: "90",  name: AI,      subnet: "172.16.90.0/24",   color: "#7ee787", note: "dazwischen · KI, nur definierte APIs"}
+  - {key: "40",  name: TRUSTED, subnet: "192.168.40.0/24",  color: "#39c5cf", note: "Alltag · Laptop, Desktop, Handy"}
+  - {key: "50",  name: IOT,     subnet: "192.168.50.0/24",  color: "#3fb950", note: "Alltag · Smart Home, Drucker, Luftreiniger"}
+  - {key: "60",  name: GUEST,   subnet: "192.168.60.0/24",  color: "#bc8cff", note: "Gäste · nur Internet"}
+  - {key: "vpn", tag: WireGuard, name: VPN, subnet: "100.64.10.0/24", color: "#56d4dd", note: "Tunnel · Handy, Laptop, VPS"}
+  - {key: "wan", tag: Modem, name: WAN, subnet: "192.168.100.0/24", color: "#f85149", note: "Übergabe vom Provider-Modem"}
+
+internet: {label: "Internet", sub: "DS-Lite? · noch offen", speed: {down: "250 Mbit/s", up: "40 Mbit/s"}}
+remote:
+  - {name: "Fernzugriff", note: "Handy + Laptop · WireGuard", icon: wireguard, net: vpn}
+cloud:
+  - {icon: cloudflare, name: "Cloudflare", note: "DNS · Tunnel für die DMZ-Dienste"}
+  - {icon: wireguard, name: "VPS Yggdrasil", note: "WireGuard-Hub · Traefik, n8n, PostgreSQL"}
+
+devices:
+  - id: modem
+    role: isp_router
+    name: "Modem"
+    mythos: "Ásbrú"
+    type: "Provider"
+    model: "Provider-Modem im Bridge-Modus"
+    ip: "192.168.100.1"
+    os: "Bridge"
+    net: wan
+    icons: [fritzbox]
+    ports:
+      - {id: cable, label: Cable, kind: coax, uplink: true, note: internet}
+      - {id: lan1, label: "1G", note: "Firewall A"}
+      - {id: lan2, label: "1G", note: "Firewall B"}
+  - id: fw1
+    role: firewall
+    name: "Firewall A"
+    mythos: "Heimdall"
+    type: "router/firewall"
+    model: "Mini-PC · 4× Intel i226"
+    os: "OPNsense"
+    ip: "10.10.10.2"
+    internal: heimdall
+    net: "10"
+    border: trunk
+    icons: [opnsense]
+    hw:
+      - {icon: glyph-cpu, label: "CPU", value: "Intel N100", sub: "4 Kerne"}
+      - {icon: glyph-ram, label: "MEMORY", value: "16 GB DDR5", sub: "ZFS-Root"}
+      - {icon: glyph-nic, label: "NETWORK", value: "4× 2.5G Intel", sub: "WAN + 2 Trunks + pfsync"}
+    services:
+      - {icon: glyph-dhcp, name: "Kea DHCP", note: "alle VLANs"}
+      - {icon: wireguard, name: "WireGuard", note: "Fernzugriff + VPS"}
+      - {icon: crowdsec, name: "CrowdSec", note: "Bouncer"}
+      - {icon: glyph-shield, name: "CARP", note: "virtuelle .1 mit B"}
+    ports: [{id: wan, ip: ".2"}, {id: lan1, ip: ".1"}, {id: lan2}, {id: sync}]
+  - id: fw2
+    role: firewall
+    name: "Firewall B"
+    mythos: "Víðarr"
+    type: "standby"
+    model: "Mini-PC · 4× Intel i226"
+    os: "OPNsense · CARP-Backup"
+    ip: "10.10.10.3"
+    internal: vidarr
+    net: "10"
+    border: trunk
+    status: planned
+    icons: [opnsense]
+    hw:
+      - {icon: glyph-cpu, label: "CPU", value: "Intel N100", sub: "4 Kerne"}
+      - {icon: glyph-ram, label: "MEMORY", value: "16 GB DDR5", sub: "ZFS-Root"}
+      - {icon: glyph-nic, label: "NETWORK", value: "4× 2.5G Intel", sub: "wie Firewall A"}
+    services:
+      - {icon: glyph-shield, name: "CARP", note: "übernimmt bei Ausfall"}
+      - {icon: glyph-dhcp, name: "Kea DHCP", note: "Failover"}
+    ports: [{id: wan, ip: ".3"}, {id: lan1}, {id: lan2}, {id: sync}]
+  - id: sw1
+    role: switch
+    name: "Core-Switch A"
+    mythos: "Hvergelmir"
+    type: "switch"
+    model: "Cisco Catalyst 2960-X"
+    ip: "10.10.10.4"
+    internal: hvergelmir-a
+    os: "IOS 15.2"
+    net: "10"
+    border: trunk
+    icons: [cisco]
+    ports:
+      - {id: g1, label: "1", tagged: ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"]}
+      - {id: g2, label: "2", tagged: ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"]}
+      - {id: g3, label: "3", tagged: ["10", "40", "50"]}
+      - {id: g4, label: "4", untagged: "10", tagged: ["40", "50", "60"]}
+      - {id: g5, label: "5", untagged: "10"}
+      - {id: g6, label: "6", untagged: "20"}
+      - {id: g7, label: "7", tagged: ["10", "20", "30", "70", "100"]}
+      - {id: g8, label: "8", tagged: ["10", "90", "70", "100"]}
+      - {id: x1, label: "SFP+1", kind: sfp, tagged: ["10", "20", "70"]}
+      - {id: x2, label: "SFP+2", kind: sfp, untagged: "70"}
+  - id: sw2
+    role: switch
+    name: "Core-Switch B"
+    mythos: "Hvergelmir"
+    type: "switch"
+    model: "Cisco Catalyst 2960-X"
+    ip: "10.10.10.5"
+    internal: hvergelmir-b
+    os: "IOS 15.2"
+    net: "10"
+    border: trunk
+    status: planned
+    icons: [cisco]
+    ports:
+      - {id: g1, label: "1", tagged: ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"]}
+      - {id: g2, label: "2", tagged: ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"]}
+      - {id: g3, label: "3", untagged: "10"}
+      - {id: g4, label: "4", untagged: "10", tagged: ["40", "50", "60"]}
+      - {id: g5, label: "5", untagged: "100"}
+      - {id: g6, label: "6", untagged: "20"}
+      - {id: g7, label: "7", tagged: ["10", "20", "30", "70", "100"]}
+      - {id: g8, label: "8", tagged: ["10", "80", "100"]}
+      - {id: g9, label: "9", untagged: "70"}
+      - {id: x1, label: "SFP+1", kind: sfp, tagged: ["10", "20", "70"]}
+      - {id: x2, label: "SFP+2", kind: sfp, untagged: "70"}
+  - {id: desk, role: switch, name: "Desk-Switch", mythos: "Þund", type: "switch", model: "TP-Link TL-SG108E", ip: "10.10.10.6",
+     internal: thund, os: "Firmware 1.0", net: "10", border: trunk, icons: [tplink],
+     ports: [{id: p1, label: "1", tagged: ["10", "40", "50"]}, {id: p2, label: "2", untagged: "40"},
+             {id: p3, label: "3", untagged: "40"}, {id: p4, label: "4", untagged: "50"}, {id: p5, label: "5", untagged: "80"}]}
+  - {id: ap1, role: ap, name: "AP Wohnzimmer", mythos: "Walküre", type: "access point", model: "Omada EAP650", ip: "10.10.10.7",
+     internal: ap-wohnen, os: "Omada 5.14", net: "10", border: trunk, icons: [omada],
+     ssids: [{name: "Heim", redacted: "Home", vlan: "40"}, {name: "Dinge", redacted: "IoT", vlan: "50"}, {name: "Besuch", redacted: "Guest", vlan: "60"}]}
+  - {id: ap2, role: ap, name: "AP Büro", mythos: "Walküre", type: "access point", model: "Omada EAP650", ip: "10.10.10.8",
+     internal: ap-buero, os: "Omada 5.14", net: "10", border: trunk, status: planned, icons: [omada],
+     ssids: [{name: "Heim", redacted: "Home", vlan: "40"}, {name: "Dinge", redacted: "IoT", vlan: "50"}]}
+  - {id: kvm, role: kvm, name: "KVM-Switch", mythos: "Hliðskjálf", type: "IP-KVM", model: "PiKVM + 4-Port-HDMI-Switch",
+     ip: "10.10.10.11", internal: hlidskjalf, os: "PiKVM OS", net: "10", icons: [glyph-kvm]}
+  - {id: dns1, role: pi, name: "DNS 1", mythos: "Muninn", type: "Pi", model: "Raspberry Pi 4 · Pi-hole", ip: "10.10.20.12",
+     internal: muninn-1, os: "Debian 13", net: "20", icons: [raspberrypi]}
+  - {id: dns2, role: pi, name: "DNS 2", mythos: "Muninn", type: "Pi", model: "Raspberry Pi 4 · Pi-hole", ip: "10.10.20.13",
+     internal: muninn-2, os: "Debian 13", net: "20", status: planned, icons: [raspberrypi]}
+  - {id: quorum, role: pi, name: "Quorum", mythos: "Nornen", type: "Pi", model: "Raspberry Pi 3 · QDevice", ip: "10.10.100.14",
+     internal: nornen, os: "Debian 13", net: "100", status: planned, icons: [raspberrypi]}
+  - {id: ups, role: ups, name: "USV", mythos: "Megingjörð", type: "UPS", model: "APC Back-UPS Pro 900", ip: "10.10.10.15",
+     internal: megingjord, os: "NUT-Server auf DNS 1", net: "10", status: planned, icons: [glyph-ups]}
+  - {id: nas1, role: nas, name: "NAS 1", mythos: "Valhalla", type: "NAS", model: "Daten 80 % · Backup-Kern 20 %", ip: "10.10.70.16",
+     internal: valhalla-1, os: "OpenMediaVault 7 · ZFS-Spiegel", net: "70", icons: [omv]}
+  - {id: nas2, role: nas, name: "NAS 2", mythos: "Valhalla", type: "NAS", model: "Spiegel von NAS 1", ip: "10.10.70.17",
+     internal: valhalla-2, os: "OpenMediaVault 7 · ZFS-Spiegel", net: "70", status: planned, icons: [omv]}
+  - {id: nas3, role: nas, name: "Backup-NAS", mythos: "Niflheim", type: "NAS", model: "alle Backups · Pull, kein Internet", ip: "10.10.70.18",
+     internal: niflheim, os: "Proxmox Backup Server", net: "70", status: planned, icons: [pbs]}
+  - {id: pc, role: workstation, name: "Desktop", mythos: "Jörmungandr", type: "workstation", model: "Gaming-PC", ip: "192.168.40.20",
+     internal: desktop, os: "Debian 13 + Windows 11", net: "40", icons: [debian, windows]}
+  - {id: laptop, role: workstation, name: "Admin-Laptop", mythos: "Sleipnir", type: "laptop", model: "ThinkPad im Dock", ip: "192.168.40.21",
+     internal: sleipnir, os: "Debian 13", net: "40", icons: [debian]}
+  - {id: printer3d, role: printer, name: "3D-Drucker", mythos: "Dvalinn", type: "printer", model: "Bambu Lab P1S", ip: "192.168.50.30",
+     internal: dvalinn, os: "Firmware 01.08", net: "50", icons: [bambulab]}
+  - {id: pi, role: pi, name: "Bastel-Pi", type: "Pi", model: "Raspberry Pi 5", ip: "172.16.80.50", internal: pi-lab, os: "Debian 13",
+     net: "80", icons: [raspberrypi]}
+  - {id: air, role: iot, name: "Luftreiniger", type: "IoT", model: "Philips AC2889", ip: "192.168.50.32", internal: luft,
+     os: "Wi-Fi · Home Assistant", net: "50", icons: [glyph-air]}
+
+  # ---- servers (big cards in the server band)
+  - id: mgmt
+    role: server
+    name: "Management"
+    mythos: "Asgard"
+    type: "server"
+    model: "Mini-PC · Proxmox VE"
+    os: "Proxmox VE 9"
+    ip: "10.10.10.21"
+    internal: asgard
+    net: "10"
+    border: trunk
+    icons: [proxmox]
+    hw:
+      - {icon: glyph-cpu, label: "CPU", value: "i5-8500T", sub: "6 Kerne"}
+      - {icon: glyph-ram, label: "MEMORY", value: "32 GB DDR4", sub: "~28 GB frei für Gäste"}
+      - {icon: glyph-ssd, label: "SSD", value: "1 TB NVMe", sub: "Gäste + lokales Backup"}
+    guests:
+      - {id: 4214, ip: ".214", net: "10", group: "Identität", name: "Keycloak", icons: [keycloak], note: "SSO", host: auth, exposure: local}
+      - {id: 4209, ip: ".209", net: "10", group: "Identität", name: "Vaultwarden", icons: [vaultwarden], note: "Passwörter", host: vault, exposure: local}
+      - {id: 2213, ip: ".213", net: "10", group: "Verwaltung", name: "NetBox", icons: [netbox], note: "IPAM · Quelle der Wahrheit", internal: netbox}
+      - {id: 2208, ip: ".208", net: "10", group: "Verwaltung", name: "Monitoring", icons: [grafana, prometheus], note: "Prometheus + Grafana + Loki", internal: monitoring,
+         apps: [{icon: prometheus, name: "Prometheus", note: "Metriken"}, {icon: grafana, name: "Grafana", host: grafana}, {icon: loki, name: "Loki", note: "Logs"}]}
+      - {id: 3210, ip: ".210", net: "10", group: "Automatisierung", name: "Ansible", icons: [ansible], note: "Semaphore + Packagelist", internal: ansible}
+      - {id: 8224, ip: ".224", net: "10", group: "Automatisierung", name: "Forgejo", icons: [forgejo], note: "Git + CI", host: git, exposure: local}
+  - id: work
+    role: server
+    name: "Workload"
+    mythos: "Midgard"
+    type: "server"
+    model: "alter PC · PVE1"
+    os: "Proxmox VE 9"
+    ip: "10.10.10.22"
+    internal: midgard
+    net: "10"
+    border: trunk
+    icons: [proxmox]
+    hw:
+      - {icon: glyph-cpu, label: "CPU", value: "Ryzen 5 3600", sub: "6 Kerne · 12 Threads"}
+      - {icon: glyph-ram, label: "MEMORY", value: "64 GB DDR4", sub: "~58 GB frei"}
+      - {icon: glyph-ssd, label: "SSD", value: "2 TB NVMe", sub: "Gäste"}
+      - {icon: glyph-hdd, label: "HDD", value: "4 TB", sub: "lokales Backup"}
+    guests:
+      - {id: 6226, ip: ".226", net: "20", group: "Anwendungen", name: "Nextcloud", icons: [nextcloud], note: "Dateien, Kalender", host: cloud, exposure: public}
+      - {id: 6227, ip: ".227", net: "20", group: "Anwendungen", name: "Immich", icons: [immich], note: "Fotos", host: fotos, exposure: public}
+      - {id: 6228, ip: ".228", net: "20", group: "Anwendungen", name: "Paperless", icons: [paperless], note: "Dokumente", host: docs, exposure: local}
+      - {id: 6229, ip: ".229", net: "20", group: "Medien", name: "Jellyfin", icons: [jellyfin], note: "Filme, Musik", host: kino, exposure: local}
+      - {id: 3211, ip: ".211", net: "20", group: "Automatisierung", name: "n8n", icons: [n8n], note: "„Hermes“ · Workflows", host: n8n, exposure: local}
+      - {id: 1218, ip: ".218", net: "20", group: "Netzdienste", name: "PowerDNS", icons: [powerdns], note: "Auth + Recursor", internal: dns}
+      - {id: 7215, ip: ".215", net: "30", group: "Fernzugang", name: "cloudflared", icons: [cloudflare], note: "Tunnel für die DMZ", internal: tunnel}
+      - {id: 6216, ip: ".216", net: "30", group: "Fernzugang", name: "Traefik", icons: [traefik], note: "Reverse Proxy", host: www, exposure: public}
+      - {id: 1219, ip: ".219", net: "70", group: "Speicher", name: "PBS", kind: VM, icons: [pbs], note: "Proxmox Backup Server", internal: pbs}
+  - id: ai
+    role: server
+    name: "KI-Server"
+    mythos: "Muspelheim"
+    type: "server"
+    model: "GPU-Node"
+    os: "Proxmox VE 9"
+    ip: "10.10.10.23"
+    internal: muspelheim
+    net: "10"
+    border: trunk
+    status: later
+    icons: [proxmox]
+    hw:
+      - {icon: glyph-gpu, label: "GPU", value: "RTX 3090 24 GB", sub: "passthrough → Ollama"}
+      - {icon: glyph-ram, label: "MEMORY", value: "64 GB DDR4", sub: "Modelle im RAM"}
+    guests:
+      - {id: 9240, ip: ".40", net: "90", name: "Ollama", kind: VM, icons: [ollama-l], note: "lokale Modelle", internal: ollama}
+      - {id: 9241, ip: ".41", net: "90", name: "Open WebUI", icons: [openwebui-l], note: "Chat-Oberfläche", host: ai, exposure: local}
+  - id: lab
+    role: server
+    name: "Lab-Server"
+    mythos: "Jötunheim"
+    type: "server"
+    model: "alter Office-PC"
+    os: "Proxmox VE 9"
+    ip: "10.10.10.24"
+    internal: jotunheim
+    net: "10"
+    border: trunk
+    status: planned
+    icons: [proxmox]
+    hw:
+      - {icon: glyph-cpu, label: "CPU", value: "i7-6700", sub: "4 Kerne · 8 Threads"}
+      - {icon: glyph-ram, label: "MEMORY", value: "32 GB DDR4", sub: "zum Üben"}
+    guests:
+      - {id: 9230, ip: ".30", net: "80", group: "Szenarien", name: "Containerlab", kind: VM, icons: [docker], note: "Netz-Topologien", internal: clab}
+      - {id: 9231, ip: ".31", net: "80", group: "Szenarien", name: "GNS3", kind: VM, icons: [glyph-switch], note: "CCNA-Übungen", internal: gns3}
+      - {id: 9232, ip: ".32", net: "80", group: "Sicherheit", name: "Kali", kind: VM, icons: [debian], note: "Angriff üben, nur im Lab", internal: kali}
+
+links:
+  # edge: modem → both firewalls
+  - {a: modem.lan1, b: fw1.wan, speed: 1G, net: wan}
+  - {a: modem.lan2, b: fw2.wan, speed: 1G, net: wan}
+  - {a: fw1.sync, b: fw2.sync, speed: 2.5G, net: "10", label: "pfsync"}
+  # firewalls → both core switches (full mesh of trunks)
+  - {a: fw1.lan1, b: sw1.g1, speed: 2.5G, vlans: ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"]}
+  - {a: fw1.lan2, b: sw2.g1, speed: 2.5G, vlans: ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"]}
+  - {a: fw2.lan1, b: sw1.g2, speed: 2.5G, vlans: ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"]}
+  - {a: fw2.lan2, b: sw2.g2, speed: 2.5G, vlans: ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"]}
+  - {a: sw1.x1, b: sw2.x1, speed: 10G, vlans: ["10", "20", "70"]}
+  # access tier
+  - {a: sw1.g3, b: desk.p1, speed: 1G, vlans: ["10", "40", "50"]}
+  - {a: sw1.g4, b: ap1, speed: 1G, vlans: ["10", "40", "50", "60"]}
+  - {a: sw2.g4, b: ap2, speed: 1G, vlans: ["10", "40", "50"]}
+  - {a: sw1.g5, b: kvm, speed: 100M, net: "10"}
+  - {a: sw1.g6, b: dns1, speed: 1G, net: "20"}
+  - {a: sw2.g6, b: dns2, speed: 1G, net: "20"}
+  - {a: sw2.g5, b: quorum, speed: 100M, net: "100"}
+  - {a: sw2.g3, b: ups, speed: 100M, net: "10"}
+  - {a: sw1.x2, b: nas1, speed: 10G, net: "70"}
+  - {a: sw2.x2, b: nas2, speed: 10G, net: "70"}
+  - {a: sw2.g9, b: nas3, speed: 1G, net: "70"}
+  # servers
+  - {a: sw1.g7, b: work, speed: 1G, vlans: ["10", "20", "30", "70", "100"]}
+  - {a: sw2.g7, b: mgmt, speed: 1G, vlans: ["10", "20", "30", "70", "100"]}
+  - {a: sw1.g8, b: ai, speed: 1G, vlans: ["10", "90", "70", "100"]}
+  - {a: sw2.g8, b: lab, speed: 1G, vlans: ["10", "80", "100"]}
+  # desk
+  - {a: desk.p2, b: pc, speed: 1G, net: "40"}
+  - {a: desk.p3, b: laptop, speed: 1G, net: "40"}
+  - {a: desk.p5, b: pi, speed: 1G, net: "80"}
+  - {a: ap1, b: printer3d, kind: wifi, net: "50"}
+  - {a: ap2, b: air, kind: wifi, net: "50"}
+  # KVM console to every server
+  - {a: kvm, b: mgmt, kind: kvm, label: "HDMI + USB"}
+  - {a: kvm, b: work, kind: kvm}
+  - {a: kvm, b: ai, kind: kvm}
+  - {a: kvm, b: lab, kind: kvm}
+
+port_forwards:
+  - {port: "51820", proto: "UDP", to: "WireGuard", what: "Fernzugriff + VPS-Tunnel"}
+  - {port: "443", proto: "TCP", to: "Traefik", what: "nur über Cloudflare-IPs"}
+
+ip_extra:
+  - {vlan: "vpn", ip: ".1", name: "Firewall A", kind: "wg0"}
+  - {vlan: "vpn", ip: ".10", name: "Laptop", kind: "peer"}
+  - {vlan: "vpn", ip: ".11", name: "Handy", kind: "peer"}
+  - {vlan: "vpn", ip: ".20", name: "VPS Yggdrasil", kind: "peer"}

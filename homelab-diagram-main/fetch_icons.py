@@ -40,6 +40,12 @@ ICON_MAP = {
     "signal": "signal", "sonarr": "sonarr", "stirling": "stirling-pdf", "tandoor": "tandoor-recipes",
     "traefik": "traefik", "truenas": "truenas-scale", "unifi": "unifi", "whatsapp": "whatsapp",
     "windows": "microsoft-windows", "wireguard": "wireguard", "zigbee2mqtt": "zigbee2mqtt",
+    # for the example labs (Max' planned devices and services)
+    "cisco": "cisco", "raspberrypi": "raspberry-pi", "omv": "openmediavault", "pihole": "pi-hole",
+    "vaultwarden": "vaultwarden", "netbox": "netbox", "n8n": "n8n", "nextcloud": "nextcloud",
+    "ansible": "ansible", "keycloak": "keycloak", "pbs": "proxmox", "bambulab": "bambu-lab",
+    "debian": "debian-linux", "powerdns": "powerdns", "tplink": "tp-link",
+    "omada": "omada", "gitea": "gitea", "uptimekuma": "uptime-kuma", "apc": "apc",
 }
 
 # dark icons without a light variant: recolor them for the dark background
