@@ -71,7 +71,24 @@ Herkunft des Tools: Es stammt ursprünglich von *u/goblinmine* (MIT-Lizenz, `LIC
 3. **Platzieren** je Reihe: Jede Karte möchte ihren ersten Kabeleingang genau unter ihren Port legen. Isotone Regression (`pav`) verhindert Überlappungen. Zu breite Reihen werden erst kompakter (`shrink`: weniger Dienste-Spalten, Ports unter den Kopf), dann unter die Seitenspalten geschoben (volle Breite), dann umgebrochen (`_chunks`). Kabel, die eine Reihe nur durchqueren, bekommen dort eine eigene Gasse (`Pseudo`). Server stehen nebeneinander, sobald sie passen, und eine Reihe hat eine gemeinsame Höhe.
 4. **Kanäle** zwischen den Reihen: `route.assign` vergibt Spuren mit wenig Kreuzungen. Die Höhe des Kanals ergibt sich daraus. In der Kette laufen Kabel gerade, wo die Ports übereinander liegen (`chain_align`), LACP-Bündel bekommen die Ellipse.
 5. **Zeichnen**: Karten → Kabel (mit dunkler Aussparung, damit Kreuzungen lesbar bleiben) → Buchsen + VLAN-Striche → Speed-Labels.
-6. **QA** (`qa.run`): Bei einem Fund bricht `build.py` ab. Mit `--no-qa` lässt sich das Bild trotzdem ansehen.
+6. **QA** (`qa.run`): Text auf Text, Kabel durch Karten oder Text, **Kabel aufeinander** (zu dicht parallel). Bei einem Fund bricht `build.py` ab. Mit `--no-qa` lässt sich das Bild trotzdem ansehen.
+
+### Ansichten / Layouts (v3, `--layout=`)
+
+| Layout | Modul | Gedacht für |
+|---|---|---|
+| `rows` | `render.py` (v2) | kleine Labs, sieht aus wie das Original. Bei großen Labs entstehen übereinanderliegende Kabel, die die QA jetzt meldet. |
+| `cluster` | `render2.py` | **große Labs**: Kette oben, darunter je Switch ein **Baum-Block**. Kinder stehen in Spalten, jedes Kind hat eine eigene Bahn links und tritt von links ein. Die Bahn-Reihenfolge des **Kamms** (`Renderer2.comb`) macht Kreuzungen unter einem Switch unmöglich. |
+| `flow` | `layouts_flow.py` + `render2.py` | Lesen von links nach rechts: alle Panels links, Kette senkrecht, Blöcke rechts daneben. Zum Vergleich gedacht, hat mehr Kreuzungen. |
+| `auto` (Standard) | `build.auto_layout` | `rows` bis 8 Geräte unter den Switches, sonst `cluster` |
+
+- **Gemeinsam für `cluster`/`flow`:**
+  - `route2.py` ist der **Flächen-Router**: A* auf 8-px-Raster, Abstand je Linienbreite (16 px dünn / 24 px Trunk), Kreuzungen nur rechtwinklig und teuer, wenige Knicke, kurzer gerader Austritt an Karten. Was der Kamm verlegt hat, sperrt er als Hindernis (`commit_path`).
+  - Ein KVM-Switch mit mehreren Servern bekommt **Abzeichen** statt langer Konsolenlinien.
+  - Server wählen ihre Breite selbst (`ServerCard.best_w`).
+  - Die Canvas wächst eher in die Breite als in die Höhe (`MAX_W`).
+- **Bewertung** (`qa.score`, wird bei jedem Render ausgegeben): Kreuzungen, Kabellänge, Knicke, längstes Kabel, Größe.
+- **Vergleichsseite:** `python3 build.py --examples --layout=all --no-qa > out/examples-all.log; python3 build.py --layout=all --no-qa >> out/examples-all.log; python3 vergleich.py` → `out/vergleich.html` (eine Datei, Bilder eingebettet, am Handy zoombar).
 
 ### Sicherheitsnetze
 
@@ -103,9 +120,10 @@ python3 build.py --unredacted   # → out/homelab-unredacted.*
 python3 build.py --ips=table    # IP-Varianten: table | inline | both | sheet → out/homelab-ips-<variante>.*
 python3 build.py --variants     # alle Varianten auf einmal (Standard + 4 IP-Varianten)
 python3 build.py --examples     # alle Labs in examples/ → out/examples/
+python3 build.py --layout=cluster   # Ansicht wählen: auto (Standard) | rows | cluster | flow | all
 python3 build.py --lab=DATEI    # ein anderes Lab (Schema 1 oder 2)
 python3 build.py --collect      # erst Daten aus sources.yaml holen → inventory.generated.yaml (+ Änderungsbericht)
-python3 -m unittest discover tests   # Tests (Quellen + alle Labs ohne QA-Fund), < 1 s
+python3 -m unittest discover tests   # Tests: Quellen, alle Labs × Layouts ohne QA-Fund, Kreuzungs-Grenzen (~30 s)
 ```
 
 **Datenfluss:** `inventory.yaml` (bzw. `--lab`) → + `inventory.generated.yaml` (aus `--collect`) → + `overrides.yaml` (von Hand, gewinnt immer). Listen werden über `id`/`key` bzw. bei Verbindungen über ihre beiden Enden zusammengeführt.

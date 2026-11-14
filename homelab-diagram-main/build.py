@@ -10,6 +10,7 @@ Usage:
   python3 build.py --examples            every lab in examples/ → out/examples/<name>.png
   python3 build.py --collect             pull data from the sources in sources.yaml first
                     [--sources=FILE]     (another sources file, e.g. sources.example.yaml)
+  python3 build.py --layout=NAME         auto (default) | rows | cluster | flow | all
   python3 build.py --no-qa               draw even if the overlap check finds problems
 
 Old versions: versions/vN/build.py (see versions/README.md).
@@ -68,7 +69,17 @@ def merged(path):
     return d
 
 
-def render(lab_d, out_name, unredacted=False, ip_mode="none", check=True):
+LAYOUTS = ("rows", "cluster", "flow")
+SCORES = {}
+
+
+def auto_layout(lab):
+    """Small labs keep the original look (rows); bigger ones get the 2-D cluster layout."""
+    n = sum(1 for d in lab.devices if d.role not in ("isp_router", "firewall", "router") and not d.is_server)
+    return "rows" if n <= 8 else "cluster"
+
+
+def render(lab_d, out_name, unredacted=False, ip_mode="none", check=True, layout="auto"):
     lab = Lab(lab_d)
     meta, red = lab.meta, lab.redact
     redact_domain = red.get("domain", True) and not unredacted
@@ -88,11 +99,20 @@ def render(lab_d, out_name, unredacted=False, ip_mode="none", check=True):
         h = ip_table(S, lab, ips, 40, 130, T.W - 80, 4, hosts=True)
         H = 130 + h + 40
     else:
-        R = Renderer(lab, ip_mode, unredacted)
+        if layout == "auto":
+            layout = auto_layout(lab)
+        if layout == "rows":
+            R = Renderer(lab, ip_mode, unredacted)
+        else:
+            from hld.render2 import Renderer2
+            R = Renderer2(lab, ip_mode, unredacted, layout)
         H = R.draw(title)
         S = R.S
         for w in R.warnings:
             print("Warnung:", w)
+    sc = qa.score(S, S.w, H)
+    print(f"Bewertung {out_name}: " + " · ".join(f"{k} {v}" for k, v in sc.items()))
+    SCORES[out_name] = sc
     if check:
         problems = qa.run(S)
         if problems:
@@ -115,9 +135,24 @@ def main():
     if "--collect" in sys.argv:
         from hld.sources import collect
         collect.run(ROOT, arg("sources"))
+    lay = arg("layout", "auto")
+    lays = LAYOUTS if lay == "all" else (lay,)
+    if lay not in LAYOUTS + ("all", "auto"):
+        raise SystemExit(f"--layout= muss eins davon sein: auto, all, {', '.join(LAYOUTS)}")
     if "--examples" in sys.argv:
+        failed = []
         for f in sorted((ROOT / "examples").glob("*.yaml")):
-            render(load(f), f"examples/{f.stem}", unred, "none", check)
+            for L in lays:
+                try:
+                    render(load(f), f"examples/{f.stem}" + ("" if L == "auto" else f"-{L}"), unred, "none", check, L)
+                except SystemExit as e:
+                    if len(lays) == 1:
+                        raise
+                    failed.append(f"{f.stem} ({L}): {e}")
+        for x in failed:
+            print("FEHLER:", x)
+        if failed:
+            raise SystemExit(1)
         return
     path = arg("lab", str(ROOT / "inventory.yaml"))
     d = merged(path)
@@ -129,7 +164,9 @@ def main():
     for m in modes:
         if m not in IP_MODES + ("none",):
             raise SystemExit(f"--ips= muss eins davon sein: {', '.join(IP_MODES)}")
-        render(d, base + ("" if m == "none" else f"-ips-{m}"), unred, m, check)
+        for L in lays:
+            render(d, base + ("" if m == "none" else f"-ips-{m}") + ("" if L == "auto" else f"-{L}"), unred, m,
+                   check, L)
 
 
 if __name__ == "__main__":

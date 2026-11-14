@@ -64,7 +64,7 @@ def remote(S, lab, cx, cy=CLOUD_Y):
         S.text(x + 66, y + 60, r.get("note", ""), 13, T.MUTED, 400)
 
 
-def cloud_services(S, lab, cx, x, y, w, cy=CLOUD_Y):
+def cloud_services(S, lab, cx, x, y, w, cy=CLOUD_Y, lines=True):
     """Cloud services (right column top) with dotted lines from the cloud. Returns height."""
     S.tag = "cloud services"
     items = lab.cloud
@@ -72,7 +72,9 @@ def cloud_services(S, lab, cx, x, y, w, cy=CLOUD_Y):
         yy = y + i * 54
         ly = yy + 22
         edge = cloud_edge(cx, cy, ly, 1)
-        if edge is not None:
+        if not lines:
+            pass
+        elif edge is not None:
             S.line([(edge - 20, ly), (x, ly)], T.FAINT, 1.6, dash="2 5", r=0)
         else:                                  # below the cloud: one shared dotted bus
             S.line([(cx + 150, cy + 35), (x - 24, cy + 35), (x - 24, ly), (x, ly)], T.FAINT, 1.6, dash="2 5", r=6)

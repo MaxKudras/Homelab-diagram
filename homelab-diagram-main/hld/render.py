@@ -867,7 +867,7 @@ class Renderer:
             col = lab.color(l.net) if l.net else T.MUTED
             w = c["w"]
             S.reg_cable(pts, f"{c['up'].d.name} ↔ {c['dn'].d.name}",
-                        (c["up"].d.name, c["dn"].d.name, c["dn"].d.name + " (tab)", c["up"].d.name + " (tab)"))
+                        (c["up"].d.name, c["dn"].d.name, c["dn"].d.name + " (tab)", c["up"].d.name + " (tab)"), w)
             halo = _trim(pts, 6)
             if halo and len(pts) > 2:
                 S.line(halo, T.BG, w + 7, cap="butt", r=10)

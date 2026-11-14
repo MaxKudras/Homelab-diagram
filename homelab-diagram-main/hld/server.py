@@ -71,6 +71,13 @@ class ServerCard:
                        + 32 for z in self.zones])
         return 40 + (self.hww + 20 if self.hww else 0) + (self.gw + 20 if self.gw else 0) + zw
 
+    def best_w(self, max_h=820, max_w=2200):
+        """Narrowest width at which the card is no taller than max_h (or max_w)."""
+        w = self.min_w()
+        while w < max_w and self.size(w) > max_h:
+            w += 80
+        return min(w, max_w)
+
     # ---- geometry
     def _zone_cols(self, z, zw):
         cwmin = max([CW_MIN] + [chip_w(g, _ip_txt(self.lab, g, self.inline)) for _, gs in z["groups"] for g in gs])
@@ -120,9 +127,10 @@ class ServerCard:
         for z, (parts, cw, zh) in zip(self.zones, self.zlay):
             col = lab.color(z["key"])
             S.rect(zx, zy, zw, zh, rx=14, fill=col + "0d", stroke=col + "88", sw=1.5)
-            S.pill(zx + zw - 14, zy + 16, vtag(lab, z["key"]), col, 10.5, mono=True, h=19, pad=6, anchor="end")
-            if z["note"]:
-                S.text(zx + 18, zy + 31, z["note"], 12.5, T.MUTED, 400)
+            pw = S.pill(zx + zw - 14, zy + 16, vtag(lab, z["key"]), col, 10.5, mono=True, h=19, pad=6, anchor="end")
+            if z["note"]:                       # the note never runs into the VLAN pill
+                from .text import fit_size
+                S.text(zx + 18, zy + 31, z["note"], fit_size(z["note"], 12.5, zw - 32 - 16 - pw), T.MUTED, 400)
             for ci, p in enumerate(parts):
                 xx, yy = zx + 16 + ci * (cw + CGAP), zy + 56
                 for gi in p:

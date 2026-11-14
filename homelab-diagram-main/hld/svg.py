@@ -52,8 +52,8 @@ class SVG:
     def reg_card(self, x, y, w, h, name):
         self.cards.append((x, y, x + w, y + h, name))
 
-    def reg_cable(self, pts, name, ends=()):
-        self.cables.append((list(pts), name, tuple(ends)))
+    def reg_cable(self, pts, name, ends=(), width=3):
+        self.cables.append((list(pts), name, tuple(ends), width))
 
     # ---- primitives
     def rect(self, x, y, w, h, rx=10, fill=T.PANEL, stroke=T.BORDER, sw=1.2, op=1, dash=None):

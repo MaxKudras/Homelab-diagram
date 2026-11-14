@@ -91,22 +91,40 @@ class Sources(unittest.TestCase):
 
 
 class Pipeline(unittest.TestCase):
-    def test_examples_render_without_qa_problems(self):
-        """Every example lab validates and draws without overlaps (SVG only, no PNG: fast)."""
+    def _draw(self, f, layout):
         import build
         from hld import qa, validate
         from hld.model import Lab
         from hld.render import Renderer
+        from hld.render2 import Renderer2
         from hld.text import configure
+        lab = Lab(build.load(f))
+        configure(lab.meta.get("domain", ""), "redacted.test", True)
+        err, _ = validate.check(lab)
+        self.assertEqual(err, [])
+        if layout == "auto":
+            layout = build.auto_layout(lab)
+        R = Renderer(lab) if layout == "rows" else Renderer2(lab, layout=layout)
+        H = R.draw("t")
+        return R, qa.run(R.S), qa.score(R.S, R.S.w, H)
+
+    def test_examples_render_without_qa_problems(self):
+        """Every lab in the default layout and in cluster/flow: no overlaps, no stacked cables, every
+        cable routed (SVG only, no PNG: fast)."""
         for f in sorted((ROOT / "examples").glob("*.yaml")) + [ROOT / "inventory.yaml"]:
-            with self.subTest(lab=f.name):
-                lab = Lab(build.load(f))
-                configure(lab.meta.get("domain", ""), "redacted.test", True)
-                err, _ = validate.check(lab)
-                self.assertEqual(err, [])
-                R = Renderer(lab)
-                R.draw("t")
-                self.assertEqual(qa.run(R.S), [])
+            for layout in ("auto", "cluster", "flow"):
+                with self.subTest(lab=f.name, layout=layout):
+                    R, problems, _ = self._draw(f, layout)
+                    self.assertEqual(problems, [])
+                    self.assertEqual(getattr(R, "failed", []), [])
+
+    def test_cluster_stays_tidy(self):
+        """Guard against chaos coming back: few crossings in the big labs (cluster layout)."""
+        limits = {"max-zukunft.yaml": 15, "stress-60.yaml": 10, "klein.yaml": 0, "aus-quellen.yaml": 0}
+        for name, limit in limits.items():
+            with self.subTest(lab=name):
+                _, _, sc = self._draw(ROOT / "examples" / name, "cluster")
+                self.assertLessEqual(sc["Kreuzungen"], limit)
 
 
 if __name__ == "__main__":

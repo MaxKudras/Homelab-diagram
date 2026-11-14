@@ -45,6 +45,7 @@ python3 setup.py                # installs the fonts from fonts/, checks rsvg-co
 python3 build.py                # → out/homelab.svg + out/homelab.png (redacted)
 python3 build.py --unredacted   # → out/homelab-unredacted.svg + .png
 python3 build.py --examples     # every lab in examples/ → out/examples/
+python3 build.py --layout=cluster   # auto (default) | rows | cluster | flow | all
 python3 build.py --collect      # pull data from the sources in sources.yaml first
 python3 -m unittest discover tests
 python3 build.py --ips=table    # + list of every IP in use (table | inline | both | sheet)
