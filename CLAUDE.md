@@ -24,7 +24,12 @@ Herkunft des Tools: Es stammt ursprünglich von *u/goblinmine* (MIT-Lizenz, `LIC
    - Die Arbeit ist committet und auf den Arbeits-Branch gepusht.
 3. **Zurückmelden:** kurz auf Deutsch sagen, was geändert wurde, wie geprüft wurde und was auffiel. Das Ergebnisbild mitschicken.
 4. **Qualität vor Tempo:** Es soll richtig gut aussehen und richtig informativ sein, aber klar, nicht eng oder überladen. Man muss sehen, wo jede Verbindung hingeht.
-5. **Sprache:** Mit Max immer **Deutsch**. Code, Kommentare und YAML-Schlüssel bleiben im bestehenden Stil (Englisch), solange Max nichts anderes sagt.
+5. **Planen, auflisten, abarbeiten:** Jede Aufgabe wird zuerst in **viele nummerierte Unteraufgaben** zerlegt. Dieser Plan (mit Reihenfolge) wird Max **ausgegeben, bevor** die Arbeit beginnt. Dann wird Punkt für Punkt abgearbeitet und der Fortschritt gemeldet. Kommen unterwegs neue Punkte dazu, die noch nicht im Plan stehen: **anhalten, neu planen, den neuen Plan mit Reihenfolge ausgeben**, erst dann weitermachen.
+6. **Versionen:** Nach jeder **größeren** Änderung am Diagramm (vieles hat sich verändert, z. B. neues Layout, neue Engine, große neue Bereiche) wird eine neue Version erstellt, damit Max alte Stände jederzeit aufrufen kann. Bei kleinen Einzelschritten **nicht**.
+   - Git-Tag `vN` auf den Commit.
+   - Lauffähige Kopie in `homelab-diagram-main/versions/vN/` (Code + YAML + `example.png`), rendert mit `python3 versions/vN/build.py` (Ausgabe in `versions/vN/out/`).
+   - Eintrag in `homelab-diagram-main/versions/README.md`: Version, Datum, was sich geändert hat.
+7. **Sprache:** Mit Max immer **Deutsch**. Code, Kommentare und YAML-Schlüssel bleiben im bestehenden Stil (Englisch), solange Max nichts anderes sagt.
 
 ---
 
@@ -126,7 +131,7 @@ ImageMagick heißt hier `convert`, nicht `magick`.
 
 ## Git
 
-- Arbeits-Branch: siehe Sitzungsvorgabe (aktuell `claude/ecstatic-planck-8tlt5r`). Basis ist `main`.
+- Arbeits-Branch: siehe Sitzungsvorgabe (aktuell `claude/charming-edison-n1eyfr`). Basis ist `main`.
 - `out/`, `__pycache__/` und heruntergeladene Icons werden nicht committet (`.gitignore`).
 - Nach jeder abgeschlossenen Aufgabe committen und pushen, Commit-Nachricht auf Deutsch, knapp und sachlich.
 
