@@ -31,11 +31,22 @@ WIDTH_WEIGHT = [0.4]     # how much a block's width counts against its height (r
 MAX_W = 3400             # preferred canvas width; blocks get narrower before the canvas grows
 
 
-class Box:
-    """A placed group: a card (optional) with children in columns. Coordinates are relative."""
+MID_GAP = 56             # between the left and the right column group (the port drops come down here)
 
-    def __init__(self, node, items, lab, renderer):
+
+class Box:
+    """A placed group: a card (optional) on top, its children in columns on BOTH sides of its ports.
+
+    Children are in port order. The first nL of them stand in columns LEFT of the ports: their
+    lanes run on the right of the column and they are entered from the right (E); top → bottom in
+    port order. The rest stand RIGHT of the ports: lanes on the left, entered from the left (W),
+    highest port on top. With this rule the comb (Renderer2.comb) never crosses itself and every
+    cable takes the short way. The optimizer (optimize.py) picks nL and the column sizes per side.
+    """
+
+    def __init__(self, node, items, lab, renderer, key=None):
         self.node, self.items, self.R = node, items, renderer
+        self.key = key or (node.id if node else None)
         self.layout()
 
     def n_cables(self, it):
@@ -43,59 +54,108 @@ class Box:
         n = it.node if isinstance(it, Box) else it
         return max(1, len([c for c in self.R.cables if self.R.parent_cable(c) and c["child"] is n]))
 
+    def default_params(self):
+        n = len(self.items)
+        nl = n // 2
+        hl = [it.h for it in self.items[:nl]]
+        hr = [it.h for it in self.items[nl:]]
+        kl = max(1, min(len(hl), round(sum(hl) / 900))) if hl else 0
+        kr = max(1, min(len(hr), round(sum(hr) / 900))) if hr else 0
+        from .optimize import _sizes_balanced
+        return {"nL": nl, "L": _sizes_balanced(hl, kl) if hl else [], "R": _sizes_balanced(hr, kr) if hr else []}
+
     def layout(self):
-        """Pick the number of columns that gives the most compact block and place everything."""
         items = self.items
-        best = None
         root_w = self.node.w if self.node else 0
-        for ncol in range(1, len(items) + 1):
-            # columns take the ports from left to right; inside a column the highest port is on top,
-            # so the comb of cables (see Renderer2.comb) never crosses itself
-            cols = [list(reversed(c)) for c in _split(items, ncol)]
-            geo = self._geometry(cols)
-            w, h = geo["w"], geo["h"]
-            if w > 2600 and ncol > 1:
-                break
-            score = h + WIDTH_WEIGHT[0] * max(w, root_w)
-            if best is None or score < best[0]:
-                best = (score, cols, geo)
         if not items:
-            self.cols, self.geo = [], {"w": root_w, "h": (self.node.h if self.node else 0), "cols": []}
-        else:
-            _, self.cols, self.geo = best
-        self.w = max(root_w, self.geo["w"])
-        self.h = self.geo["h"]
+            self.cols, self.geo = [], {"w": root_w, "h": (self.node.h if self.node else 0), "cols": [],
+                                       "root_x": 0, "anchor": root_w / 2}
+            self.w, self.h = root_w, self.geo["h"]
+            return
+        prm = self.R.box_params.get(self.key)
+        if not prm or prm["nL"] + 0 > len(items) or sum(prm["L"]) != prm["nL"] or \
+                sum(prm["R"]) != len(items) - prm["nL"]:
+            prm = self.default_params()
+            self.R.box_params[self.key] = prm
+        nl = prm["nL"]
+        left, right = items[:nl], items[nl:]
+        cols = []
+        i = 0
+        for n in prm["L"]:
+            cols.append(("E", left[i:i + n]))               # port order, top → bottom
+            i += n
+        i = 0
+        for n in prm["R"]:
+            cols.append(("W", list(reversed(right[i:i + n]))))   # highest port on top
+            i += n
+        self.cols = cols
+        self.geo = self._geometry(cols)
+        self.w, self.h = self.geo["w"], self.geo["h"]
+
+    def port_mid(self):
+        """x (relative to the root card) in the middle of the ports its children hang on."""
+        n = self.node
+        xs = []
+        for c in self.R.cables:
+            if c.get("par") is n and c.get("child") is not None:
+                p = c["link"].port_of(n.id)
+                xs.append(n.port_x[p] if p in n.port_x else n.w / 2)
+        return sum(xs) / len(xs) if xs else n.w / 2
 
     def _geometry(self, cols):
         head = self.node.h if self.node else 0
-        ncab = sum(self.n_cables(it) for col in cols for it in col)
-        top = head + (TOP_GAP + T.TAB + ncab * LANE if self.node else 0)
+        nl = sum(self.n_cables(it) for side, col in cols if side == "E" for it in col)
+        nr = sum(self.n_cables(it) for side, col in cols if side == "W" for it in col)
+        top = head + (TOP_GAP + T.TAB + max(nl, nr) * LANE if self.node else 0)
         x, out, hmax = 0, [], 0
-        for col in cols:
+        anchor = None
+        for side, col in cols:
+            if side == "W" and anchor is None:
+                anchor = x + (MID_GAP / 2 if out else 0)
+                x += MID_GAP if out else 0
             lanes = sum(self.n_cables(it) for it in col)
             lane_w = 18 + lanes * LANE + LABEL_GAP
+            maxw = max(it.w for it in col)
             y = top
             places = []
             for it in col:
-                places.append((x + lane_w, y))
+                if side == "E":                          # right-aligned, lanes on the right
+                    places.append((x + maxw - it.w, y))
+                else:                                    # left-aligned, lanes on the left
+                    places.append((x + lane_w, y))
                 y += it.h + ITEM_GAP
-            cw = lane_w + max(it.w for it in col)
-            out.append({"x": x, "lane_w": lane_w, "places": places})
+            out.append({"x": x, "side": side, "lane_w": lane_w, "maxw": maxw, "places": places})
             hmax = max(hmax, y - ITEM_GAP)
-            x += cw + COL_GAP
-        return {"w": x - COL_GAP, "h": hmax, "cols": out}
+            x += maxw + lane_w + COL_GAP
+        if anchor is None:                               # only left columns
+            anchor = x - COL_GAP + MID_GAP / 2
+            width = x - COL_GAP + MID_GAP
+        else:
+            width = x - COL_GAP
+        root_x = 0
+        if self.node:                                    # the root card's ports above the middle gap
+            root_x = anchor - self.port_mid()
+        shift = -min(0, root_x)
+        for g in out:
+            g["x"] += shift
+            g["places"] = [(px + shift, py) for px, py in g["places"]]
+        root_x += shift
+        anchor += shift
+        width = max(width + shift, root_x + (self.node.w if self.node else 0))
+        return {"w": width, "h": max(hmax, head), "cols": out, "root_x": root_x, "anchor": anchor}
 
     def place(self, x, y):
         """Absolute positions for the root card and all children (recursively)."""
         self.x, self.y = x, y
         if self.node:
-            self.node.x, self.node.y = x, y
-        for col, g in zip(self.cols, self.geo["cols"]):
+            self.node.x, self.node.y = x + self.geo["root_x"], y
+        for (side, col), g in zip(self.cols, self.geo["cols"]):
             for it, (px, py) in zip(col, g["places"]):
                 n = it.node if isinstance(it, Box) else it
-                n.col = {"items_x": x + px, "members": [m.node if isinstance(m, Box) else m for m in col]}
+                n.col = {"side": side, "items_x": x + g["x"] + (g["lane_w"] if side == "W" else 0),
+                         "edge_x": x + g["x"] + g["maxw"]}
                 if isinstance(it, Box):
-                    it.place(x + px, y + py)
+                    it.place(x + px - (it.geo["root_x"] if side == "W" else 0), y + py)
                 else:
                     it.x, it.y = x + px, y + py
 
@@ -111,6 +171,7 @@ class Renderer2(Renderer):
     def __init__(self, lab, ip_mode="none", unredacted=False, layout="cluster"):
         super().__init__(lab, ip_mode, unredacted)
         self.layout_name = layout
+        self.box_params = {}            # box key → column sizes (from the optimizer)
 
     # ------------------------------------------------------------ graph helpers
     def build_tree(self):
@@ -201,7 +262,7 @@ class Renderer2(Renderer):
             if n.d.extra.get("kvm_note"):
                 n.h += 26                      # room for the "Konsole für N Server" pill
             if n.kind == "server":
-                n.w = n.server.best_w()
+                n.w = n.server.best_w(max_h=1000, max_w=1300)
                 n.h = n.server.size(n.w)
         self.columns()
         # chain rows, centered
@@ -209,9 +270,10 @@ class Renderer2(Renderer):
         prev = None
         for ids in self.chain:
             nodes = [self.nodes[i] for i in ids]
-            total = sum(n.w for n in nodes) + 40 * (len(nodes) - 1)
+            gap = 120 if any(l.a_dev in ids and l.b_dev in ids for l in self.lab.links) else 40
+            total = sum(n.w for n in nodes) + gap * (len(nodes) - 1)
             while total > T.CENTER_R - T.CENTER_L and any(n.shrink() for n in nodes):
-                total = sum(n.w for n in nodes) + 40 * (len(nodes) - 1)
+                total = sum(n.w for n in nodes) + gap * (len(nodes) - 1)
             if prev is not None:
                 y = prev + 96 + T.TAB
             if total > T.W - 2 * T.MARGIN:          # wider than the canvas: widen it
@@ -227,46 +289,59 @@ class Renderer2(Renderer):
                 y = max(y, self.right_bottom + 60 + T.TAB)
             for n in nodes:
                 n.x, n.y = x, y
-                x += n.w + 40
+                x += n.w + gap
             prev = max(n.y + n.h for n in nodes)
         chain_bottom = prev or y
-        blocks = self.make_blocks()
-        # narrower blocks until everything fits into the preferred width (height is worse than width)
-        def total_w(bl):
-            return sum(b.w for _, b in bl) + BLOCK_GAP * max(0, len(bl) - 1)
-        cands = []
-        for wgt in (0.15, 0.4, 0.9, 1.8, 4.0, 10.0):
-            WIDTH_WEIGHT[0] = wgt
-            bl = self.make_blocks()
-            cands.append((total_w(bl) > MAX_W - 2 * T.MARGIN, max([b.h for _, b in bl] or [0]), total_w(bl), bl))
-        WIDTH_WEIGHT[0] = 0.4
-        fits = [c for c in cands if not c[0]]
-        # lowest picture that fits the preferred width; if nothing fits, the narrowest one
-        blocks = min(fits, key=lambda c: (c[1], c[2]))[3] if fits else min(cands, key=lambda c: c[2])[3]
+        self.chain_bottom = chain_bottom
+        from .optimize import optimize
+        blocks = optimize(self)
         self.blocks = blocks
-        # place blocks under their chain device; below the side columns when they don't fit beside
-        total = total_w(blocks)
-        y0 = chain_bottom + 120 + self.n_block_tracks()
+        self.place_blocks(blocks, final=True)
+
+    def block_area(self, blocks):
+        """y of the block row and the free x-range for it."""
+        total = sum(b.w for _, b in blocks) + BLOCK_GAP * max(0, len(blocks) - 1)
+        y0 = self.chain_bottom + 120 + self.n_block_tracks()
         L, R = T.CENTER_L, T.CENTER_R
         if total > R - L:
             y0 = max(y0, max(self.left_bottom, self.right_bottom) + 60)
-            L, R = T.MARGIN, T.W - T.MARGIN
-            if total > R - L:                   # grow the canvas sideways instead of downwards
-                self.set_width(total + 2 * T.MARGIN)
-                L, R = T.MARGIN, T.W - T.MARGIN
+            L, R = T.MARGIN, max(T.W, total + 2 * T.MARGIN) - T.MARGIN
+        return y0, L, R, total
+
+    def block_anchor(self, root, box):
+        """Center x a block wants: its middle gap (between left and right group) under the ports
+        its cables leave from."""
+        if root is None:
+            return T.CX
+        return self.ports_mid(root) - box.geo["anchor"] + box.w / 2
+
+    def ports_mid(self, root):
+        xs = []
+        for c in self.cables:
+            if c.get("par") is root and c.get("child") is not None:
+                p = c["link"].port_of(root.id)
+                xs.append(root.x + root.port_x[p] if p in root.port_x else root.x + root.w / 2)
+        return sum(xs) / len(xs) if xs else root.x + root.w / 2
+
+    def place_blocks(self, blocks, final=False):
+        y0, L, R, total = self.block_area(blocks)
+        if final and R + T.MARGIN > T.W:
+            self.set_width(R + T.MARGIN)
+
         class It:
             pseudo = False
 
             def __init__(s, b):
                 s.b, s.w = b, b.w
         its = [It(b) for _, b in blocks]
-        desired = [((root.x + root.w / 2) if root else T.CX) for root, _ in blocks]
+        desired = [self.block_anchor(root, b) for root, b in blocks]
         pav(its, desired, [BLOCK_GAP] * max(0, len(its) - 1), L, R)
         bottom = y0
         for it in its:
             it.b.place(it.x, y0)
             bottom = max(bottom, y0 + it.b.h)
         self.bottom = bottom
+        return bottom, max([it.x + it.w for it in its] + [T.W - T.MARGIN])
 
     def make_blocks(self):
         """One block per chain device (its children), in chain order (left → right)."""
@@ -275,7 +350,7 @@ class Renderer2(Renderer):
             for i in ids:
                 if self.children.get(i):
                     items = [self.build_box(k) if self.children.get(k) else self.nodes[k] for k in self.children[i]]
-                    blocks.append((self.nodes[i], Box(None, items, self.lab, self)))
+                    blocks.append((self.nodes[i], Box(None, items, self.lab, self, key="blk:" + i)))
         for o in self.orphans:                   # unconnected devices: their own block at the end
             if o not in self.parent:
                 blocks.append((None, self.build_box(o)))
@@ -308,14 +383,23 @@ class Renderer2(Renderer):
             a, b = c["a"], c["b"]
             if c["child"] is not None and c["child"].id not in chain_ids:
                 par, ch = c["par"], c["child"]
-                side_c = "W"                       # tree: every child (servers too) from its lane on the left
+                side_c = (getattr(ch, "col", None) or {}).get("side", "W")   # tree: from its lane
                 c["ends"][par.id] = self.exit_point(par, c, "S")
                 by_card.setdefault((ch.id, side_c), []).append(c)
             else:
                 up, dn = (a, b) if (a.y + a.h / 2) <= (b.y + b.h / 2) else (b, a)
-                if abs(a.y - b.y) < 1:                                # same row: both from below
-                    c["ends"][a.id] = self.exit_point(a, c, "S")
-                    c["ends"][b.id] = self.exit_point(b, c, "S")
+                if abs(a.y - b.y) < 1:
+                    lft, rgt = (a, b) if a.x < b.x else (b, a)
+                    between = [n for n in self.nodes.values() if n.x is not None and abs(n.y - a.y) < 1
+                               and lft.x < n.x < rgt.x]
+                    if not between:                   # neighbours: short and straight, side to side
+                        yy = min(lft.y + lft.h, rgt.y + rgt.h) - 30
+                        c["ends"][lft.id] = (lft.x + lft.w, yy, "E")
+                        c["ends"][rgt.id] = (rgt.x, yy, "W")
+                        c["side_link"] = True
+                    else:                             # same row, not neighbours: both from below
+                        c["ends"][a.id] = self.exit_point(a, c, "S")
+                        c["ends"][b.id] = self.exit_point(b, c, "S")
                     continue
                 if l.kind == "kvm":                 # console: from the KVM device, wherever the server is
                     k, s_ = (a, b) if a.d.role == "kvm" else (b, a)
@@ -331,8 +415,12 @@ class Renderer2(Renderer):
         for kid, cs in kvm_out.items():
             k = self.nodes[kid]
             cs.sort(key=lambda c: (c["b"] if c["a"] is k else c["a"]).y)
+            # the side away from its own lane (its lane runs on the side it is entered from)
+            lane_side = (getattr(k, "col", None) or {}).get("side", "W")
+            out_side = "W" if lane_side == "E" else "E"
+            xx = k.x if out_side == "W" else k.x + k.w
             for i, c in enumerate(cs):
-                c["ends"][kid] = (k.x + k.w, k.y + k.h / 2 + (i - (len(cs) - 1) / 2) * 18, "E")
+                c["ends"][kid] = (xx, k.y + k.h / 2 + 14 + (i - (len(cs) - 1) / 2) * 18, out_side)
         # spread entries on the receiving cards
         for (nid, side), cs in by_card.items():
             n = self.nodes[nid]
@@ -341,13 +429,15 @@ class Renderer2(Renderer):
                 o = c["a"] if c["b"] is n else c["b"]
                 e = c["ends"].get(o.id)
                 other[id(c)] = e if e else (o.x + o.w / 2, o.y + o.h, "S")
-            if side == "W":
-                cs.sort(key=lambda c: -self.lane_order(c))
+            if side in ("W", "E"):
+                # W: highest port on top · E: lowest port on top (matches the comb, no crossings)
+                cs.sort(key=lambda c: -self.lane_order(c) if side == "W" else self.lane_order(c))
                 k = len(cs)
                 mid = n.y + min(n.h / 2, 46)          # tall cards (servers): at the header, not the middle
                 ys = [mid + (i - (k - 1) / 2) * 34 for i in range(k)]
+                ex = n.x if side == "W" else n.x + n.w
                 for c, yy in zip(cs, ys):
-                    c["ends"][n.id] = (n.x, yy, "W")
+                    c["ends"][n.id] = (ex, yy, side)
             else:
                 cs.sort(key=lambda c: (other[id(c)] or (0,))[0])
                 if n.free_jacks:
@@ -421,6 +511,9 @@ class Renderer2(Renderer):
                 elif e[2] == "W":
                     lw = self.S.label_w(self.speed_txt(c), 11, True)
                     R.block_rect(e[0] - 10 - lw, e[1] - 20, e[0] - 10, e[1] - 13, margin=0)
+                elif e[2] == "E" and c.get("child") is n:
+                    lw = self.S.label_w(self.speed_txt(c), 11, True)
+                    R.block_rect(e[0] + 10, e[1] - 20, e[0] + 10 + lw, e[1] - 13, margin=0)
 
         def prio(c):
             l = c["link"]
@@ -447,16 +540,18 @@ class Renderer2(Renderer):
             c["pts"] = self.with_jacks(c, pts)
 
     def comb(self, R):
-        """Tree cables (parent → children in its block) as a comb that never crosses itself:
-        cables sorted by where they leave the parent; each gets its own level under the parent,
-        its own lane left of its column (rightmost port = innermost lane = top card) and enters its
-        card from the left. Routed explicitly, then registered as obstacles for the A* router."""
+        """Tree cables (parent → children in its block) as a comb that never crosses itself.
+        Left group (E entries): lanes right of the column, lowest port = innermost lane = top card.
+        Right group (W entries): lanes left of the column, highest port = innermost lane = top card.
+        Every cable gets its own level under the parent (left and right group count separately),
+        is drawn explicitly and registered as an obstacle for the A* router."""
         by_parent = {}
         for c in self.cables:
             if c.get("child") is None or c["link"].kind == "kvm":
                 continue
             ch = c["child"]
-            if not getattr(ch, "col", None) or c["ends"].get(ch.id, (0, 0, ""))[2] != "W":
+            col = getattr(ch, "col", None)
+            if not col or c["ends"].get(ch.id, (0, 0, ""))[2] != col["side"]:
                 continue
             if self.layout_name == "flow" and c["par"].id in {i for ids in self.chain for i in ids}:
                 continue                          # flow: blocks sit beside the chain, A* finds the way
@@ -465,25 +560,31 @@ class Renderer2(Renderer):
             par = self.nodes[pid]
             ex = {id(c): c["ends"][pid][0] for c in cs if c["ends"].get(pid)}
             cs = [c for c in cs if id(c) in ex]
-            # lanes per column: rightmost exit = innermost lane
             cols = {}
             for c in cs:
-                cols.setdefault(c["child"].col["items_x"], []).append(c)
+                col = c["child"].col
+                cols.setdefault((col["side"], col["items_x"], col["edge_x"]), []).append(c)
             lane = {}
-            for ix, ccs in cols.items():
-                ccs.sort(key=lambda c: -ex[id(c)])
-                for i, c in enumerate(ccs):
-                    lane[id(c)] = ix - LABEL_GAP - LANE / 2 - i * LANE
+            for (side, ix, edge), ccs in cols.items():
+                if side == "E":
+                    ccs.sort(key=lambda c: ex[id(c)])
+                    for i, c in enumerate(ccs):
+                        lane[id(c)] = edge + LABEL_GAP + LANE / 2 + i * LANE
+                else:
+                    ccs.sort(key=lambda c: -ex[id(c)])
+                    for i, c in enumerate(ccs):
+                        lane[id(c)] = ix - LABEL_GAP - LANE / 2 - i * LANE
             left = sorted([c for c in cs if lane[id(c)] <= ex[id(c)]], key=lambda c: ex[id(c)])
             right = sorted([c for c in cs if lane[id(c)] > ex[id(c)]], key=lambda c: -ex[id(c)])
             y0 = par.y + par.h + 24
-            for k, c in enumerate(left + right):
-                yk = y0 + k * LANE
-                e = c["ends"][c["child"].id]
-                lx = lane[id(c)]
-                pts = [(ex[id(c)], par.y + par.h), (ex[id(c)], yk), (lx, yk), (lx, e[1]), (e[0], e[1])]
-                c["pts"] = self.with_jacks(c, pts)
-                R.commit_path(pts, c["w"])
+            for group in (left, right):
+                for k, c in enumerate(group):
+                    yk = y0 + k * LANE
+                    e = c["ends"][c["child"].id]
+                    lx = lane[id(c)]
+                    pts = [(ex[id(c)], par.y + par.h), (ex[id(c)], yk), (lx, yk), (lx, e[1]), (e[0], e[1])]
+                    c["pts"] = self.with_jacks(c, pts)
+                    R.commit_path(pts, c["w"])
 
     def end(self, c, i):
         """End i (0 = a, 1 = b) as (x, y, side)."""
@@ -625,6 +726,14 @@ class Renderer2(Renderer):
                 S.trunk(pts, sw=w)
             else:
                 S.line(pts, col, w)
+            if c.get("side_link") and l.kind == "cable":
+                (xa, ya), (xb, yb) = pts[0], pts[-1]
+                def plabel(n):
+                    pp = n.d.port(l.port_of(n.id) or "")
+                    return (pp.label or pp.id) if pp else ""
+                txt = l.label or (f"{plabel(c['a'])} ↔ {plabel(c['b'])}" if plabel(c["a"]) else l.speed)
+                labels.append(((xa + xb) / 2, ya - 8, txt, T.TRUNK if l.trunk else col, 11, "middle"))
+                continue
             if l.kind == "kvm" and l.label:          # right under the KVM device, beside the line
                 labels.append((pts[0][0] + 10, pts[0][1] + 22, l.label, T.MUTED, 12, False))
             elif l.kind == "cable":
@@ -637,6 +746,8 @@ class Renderer2(Renderer):
                         labels.append((e[0] + (8 if w > 5 else 5), e[1] - 9, l.speed, tcol, 11, "start"))
                     elif e[2] == "W":
                         labels.append((e[0] - 8, e[1] - 8, l.speed, tcol, 11, "end"))
+                    elif e[2] == "E" and c.get("child") is n:
+                        labels.append((e[0] + 8, e[1] - 8, l.speed, tcol, 11, "start"))
                     elif e[2] == "N" and n.free_jacks:
                         labels.append((e[0] + 8, e[1] - 9, l.speed, tcol, 11, "start"))
         for x, y, t, col, size, anchor in labels:
@@ -656,6 +767,8 @@ class Renderer2(Renderer):
             x = e[0]
             port = n.d.port(l.port_of(n.id) or "")
             col = lab.color(l.net) if (l.net and not l.trunk) else T.TRUNK
+            if e[2] in ("E", "W"):                 # side link between neighbours: no jack
+                continue
             if e[2] == "N":
                 jy = n.y + 14
                 parts.jack(S, x - 24, jy, 48, 36, (col + "55") if not l.trunk else "#2a3443", col)
