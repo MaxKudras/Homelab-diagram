@@ -375,6 +375,9 @@ class Renderer2(Renderer):
     # ------------------------------------------------------------ endpoints
     def assign_ends(self):
         """Side and position of both ends of every cable."""
+        if self.layout_name == "manual":
+            from .layouts_manual import assign_ends_manual
+            return assign_ends_manual(self)
         chain_ids = {i for ids in self.chain for i in ids}
         by_card = {}
         kvm_out = {}
@@ -529,6 +532,10 @@ class Renderer2(Renderer):
             return (1, -depth, ch.x, ch.y)
         self.failed = []
         self.comb(R)
+        for c in self.cables:                    # hand-drawn cables (manual layout: via points)
+            if c.get("manual_pts"):
+                c["pts"] = self.with_jacks(c, c["manual_pts"])
+                R.commit_path(c["manual_pts"], c["w"])
         for c in sorted([c for c in self.cables if not c.get("pts")], key=prio):
             a, b = self.end(c, 0), self.end(c, 1)
             if not a or not b:
@@ -612,14 +619,29 @@ class Renderer2(Renderer):
                 pts.append(ext)
         return pts
 
-    def panel_boxes(self):
-        boxes = []
+    def panel_list(self):
+        """Every side panel with its box: [{key, kind, item, x, y, w, h}]. Default: the left and right
+        column; a manual layout (layout.panels.<key>: {x, y}) moves single panels anywhere."""
+        out = []
         y = 150
         for name, h in self.left:
-            boxes.append((T.LEFT_X, y, T.LEFT_X + T.LEFT_W, y + h))
+            out.append({"key": name, "kind": name, "item": None, "x": T.LEFT_X, "y": y, "w": T.LEFT_W, "h": h})
             y += h + 20
-        for item, yy, h in self.right:
-            boxes.append((T.RIGHT_X, yy, T.RIGHT_X + T.RIGHT_W, yy + h))
+        for i, (item, yy, h) in enumerate(self.right):
+            kind = item if isinstance(item, str) else "panel"
+            key = item if isinstance(item, str) else f"panel{i}"
+            out.append({"key": key, "kind": kind, "item": item, "x": T.RIGHT_X, "y": yy, "w": T.RIGHT_W, "h": h})
+        man = ((self.lab.raw.get("layout") or {}).get("panels") or {})
+        for pnl in out:
+            pos = man.get(pnl["key"])
+            if pos:
+                pnl["x"], pnl["y"] = float(pos["x"]), float(pos["y"])
+        return out
+
+    def panel_boxes(self):
+        boxes = []
+        for pnl in self.panel_list():
+            boxes.append((pnl["x"], pnl["y"], pnl["x"] + pnl["w"], pnl["y"] + pnl["h"]))
         boxes.append((T.CX - 160, P.CLOUD_Y - 85, T.CX + 160, P.CLOUD_Y + 62))      # internet cloud
         for i, _ in enumerate(self.lab.remote):
             boxes.append((T.CX - 500, 150 + i * 96, T.CX - 200, 234 + i * 96))
@@ -638,12 +660,15 @@ class Renderer2(Renderer):
         if self.layout_name == "flow":
             from .layouts_flow import layout_flow
             layout_flow(self)
+        elif self.layout_name == "manual":
+            from .layouts_manual import layout_manual
+            layout_manual(self)
         else:
             self.layout_cluster()
         self._exits = {}
         self.assign_ends()
         self.spread_exits()
-        bottom = self.bottom
+        bottom = max([self.bottom] + [p_["y"] + p_["h"] for p_ in self.panel_list()])
         H = bottom + 40
         self.route_all(H + 400)
         bottom = max([bottom] + [p[1] for c in self.cables for p in c.get("pts", [])])
@@ -651,20 +676,18 @@ class Renderer2(Renderer):
         P.header(S, title, lab.meta.get("watermark", ""), lab.meta.get("date", ""))
         P.remote(S, lab, T.CX)
         P.internet(S, lab, T.CX)
-        y = 150
-        for name, h in self.left:
-            if name == "networks":
-                P.networks(S, lab, T.LEFT_X, y, T.LEFT_W)
+        for pnl in self.panel_list():
+            k, x, yy, w = pnl["kind"], pnl["x"], pnl["y"], pnl["w"]
+            if k == "networks":
+                P.networks(S, lab, x, yy, w)
+            elif k == "legend":
+                P.legend(S, lab, self.feat, x, yy, w)
+            elif k == "cloud":
+                P.cloud_services(S, lab, T.CX, x, yy, w, lines=self.layout_name == "cluster")
+            elif k == "forwards":
+                P.forwards(S, lab, x, yy, w)
             else:
-                P.legend(S, lab, self.feat, T.LEFT_X, y, T.LEFT_W)
-            y += h + 20
-        for item, yy, h in self.right:
-            if item == "cloud":
-                P.cloud_services(S, lab, T.CX, T.RIGHT_X, yy, T.RIGHT_W, lines=self.layout_name != "flow")
-            elif item == "forwards":
-                P.forwards(S, lab, T.RIGHT_X, yy, T.RIGHT_W)
-            else:
-                P.PANELS[item["type"]](S, lab, item, T.RIGHT_X, yy, T.RIGHT_W)
+                P.PANELS[pnl["item"]["type"]](S, lab, pnl["item"], x, yy, w)
         self.draw_uplink2()
         for n in self.nodes.values():
             if n.x is not None:

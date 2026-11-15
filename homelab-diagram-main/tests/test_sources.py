@@ -118,6 +118,30 @@ class Pipeline(unittest.TestCase):
                     self.assertEqual(problems, [])
                     self.assertEqual(getattr(R, "failed", []), [])
 
+    def test_manual_layout(self):
+        """Positions from the file are used 1:1, waypoints are followed."""
+        import copy
+        import yaml
+        d = yaml.safe_load((ROOT / "examples" / "manuell.yaml").read_text())
+        d = copy.deepcopy(d)
+        for l in d["links"]:
+            if l["b"] == "pi":
+                l["via"] = [[1172, 1180]]
+        import build
+        from hld import qa
+        from hld.model import Lab
+        from hld.render2 import Renderer2
+        from hld.text import configure
+        lab = Lab(d)
+        configure("example.net", "redacted.test", True)
+        self.assertEqual(build.auto_layout(lab), "manual")
+        R = Renderer2(lab, layout="manual")
+        R.draw("t")
+        self.assertEqual(qa.run(R.S), [])
+        self.assertEqual((R.nodes["pc"].x, R.nodes["pc"].y), (40.0, 1250.0))
+        pi = next(c for c in R.cables if c["b"].id == "pi" or c["a"].id == "pi")
+        self.assertIn((1172.0, 1180.0), pi["pts"])
+
     def test_cluster_stays_tidy(self):
         """Guard against chaos coming back: few crossings in the big labs (cluster layout)."""
         limits = {"max-zukunft.yaml": 15, "stress-60.yaml": 10, "klein.yaml": 0, "aus-quellen.yaml": 0}

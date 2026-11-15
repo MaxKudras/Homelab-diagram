@@ -10,7 +10,8 @@ Usage:
   python3 build.py --examples            every lab in examples/ → out/examples/<name>.png
   python3 build.py --collect             pull data from the sources in sources.yaml first
                     [--sources=FILE]     (another sources file, e.g. sources.example.yaml)
-  python3 build.py --layout=NAME         auto (default) | rows | cluster | flow | all
+  python3 build.py --layout=NAME         auto (default) | rows | cluster | flow | manual | all
+  python3 build.py --export-positions    also write out/<name>-positionen.yaml (lab + positions)
   python3 build.py --no-qa               draw even if the overlap check finds problems
 
 Old versions: versions/vN/build.py (see versions/README.md).
@@ -69,12 +70,16 @@ def merged(path):
     return d
 
 
-LAYOUTS = ("rows", "cluster", "flow")
+LAYOUTS = ("rows", "cluster", "flow", "manual")
 SCORES = {}
 
 
 def auto_layout(lab):
-    """Small labs keep the original look (rows); bigger ones get the 2-D cluster layout."""
+    """Positions in the file (planning tool) → manual. Small labs keep the original look (rows);
+    bigger ones get the optimized 2-D cluster layout."""
+    from hld.layouts_manual import has_positions
+    if has_positions(lab):
+        return "manual"
     n = sum(1 for d in lab.devices if d.role not in ("isp_router", "firewall", "router") and not d.is_server)
     return "rows" if n <= 8 else "cluster"
 
@@ -110,6 +115,8 @@ def render(lab_d, out_name, unredacted=False, ip_mode="none", check=True, layout
         S = R.S
         for w in R.warnings:
             print("Warnung:", w)
+    if "--export-positions" in sys.argv and ip_mode != "sheet":
+        export_positions(lab_d, R, out_name)
     sc = qa.score(S, S.w, H)
     print(f"Bewertung {out_name}: " + " · ".join(f"{k} {v}" for k, v in sc.items()))
     SCORES[out_name] = sc
@@ -127,6 +134,27 @@ def render(lab_d, out_name, unredacted=False, ip_mode="none", check=True, layout
     subprocess.run(["rsvg-convert", "-z", "1.6", "-o", str(png), str(svg)], check=True)
     print(svg, png)
     return png
+
+
+def export_positions(lab_d, R, out_name):
+    """Write the lab with the positions of this render (for the planning tool to start from)."""
+    import copy
+    d = copy.deepcopy(lab_d)
+    for dv in d.get("devices", []):
+        n = R.nodes.get(str(dv["id"]))
+        if n is not None and n.x is not None:
+            dv["pos"] = {"x": round(n.x), "y": round(n.y)}
+            if n.kind == "server":
+                dv["pos"]["w"] = round(n.w)
+    if hasattr(R, "panel_list"):
+        d.setdefault("layout", {})["panels"] = {p["key"]: {"x": round(p["x"]), "y": round(p["y"])}
+                                                 for p in R.panel_list()}
+    d.setdefault("layout", {})["mode"] = "manual"
+    f = OUT / f"{out_name}-positionen.yaml"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text("# Lab mit Positionen (aus build.py --export-positions) – im Planungs-Tool öffnen\n"
+                 + yaml.safe_dump(d, sort_keys=False, allow_unicode=True))
+    print("Positionen:", f)
 
 
 def main():
