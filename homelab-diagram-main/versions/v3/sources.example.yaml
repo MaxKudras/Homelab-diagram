@@ -1,0 +1,25 @@
+# Vorlage für sources.yaml (die echte Datei ist nicht im Git, weil sie Adressen deines Labs enthält).
+# Kopieren:  cp sources.example.yaml sources.yaml   – dann url/inventory anpassen und `fixture:` entfernen.
+# Tokens NIE hier eintragen, nur den Namen der Umgebungsvariable (token_env).
+# Hier zeigen alle Quellen auf Beispieldaten in tests/fixtures/, damit es ohne Lab läuft.
+sources:
+  - type: netbox                    # IPs, VLANs, Geräte, Ports, Kabel (Quelle der Wahrheit)
+    url: https://netbox.lan
+    token_env: NETBOX_TOKEN
+    fixture: tests/fixtures/netbox.json
+  - type: proxmox                   # Nodes, VMs, LXCs, VMID, IP/VLAN aus net0
+    url: https://pve1.lan:8006
+    token_env: PVE_TOKEN            # "user@pam!tokenid=secret", Rolle PVEAuditor reicht
+    verify_tls: false
+    fixture: tests/fixtures/proxmox.json
+  - type: ansible                   # Gruppen → Rollen, host_vars → Icons, Notizen, Hostnamen
+    inventory: tests/fixtures/ansible/hosts.yml
+  - type: prometheus                # was überwacht wird, up/down
+    url: http://prometheus.lan:9090
+    fixture: tests/fixtures/prometheus.json
+  - type: opnsense                  # DHCP-Leases, WireGuard-Peers
+    url: https://heimdall.lan
+    key_env: OPN_KEY
+    secret_env: OPN_SECRET
+    verify_tls: false
+    fixture: tests/fixtures/opnsense.json
