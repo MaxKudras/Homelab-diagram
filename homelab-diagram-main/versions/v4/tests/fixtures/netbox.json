@@ -1,0 +1,629 @@
+{
+ "/api/ipam/vlans/": {
+  "count": 4,
+  "next": null,
+  "results": [
+   {
+    "vid": 10,
+    "name": "MGMT",
+    "description": "VLAN 10"
+   },
+   {
+    "vid": 20,
+    "name": "SERVER",
+    "description": "VLAN 20"
+   },
+   {
+    "vid": 40,
+    "name": "TRUSTED",
+    "description": "VLAN 40"
+   },
+   {
+    "vid": 50,
+    "name": "IOT",
+    "description": "VLAN 50"
+   }
+  ]
+ },
+ "/api/ipam/prefixes/": {
+  "count": 4,
+  "next": null,
+  "results": [
+   {
+    "prefix": "10.10.10.0/24",
+    "vlan": {
+     "vid": 10,
+     "name": "MGMT"
+    }
+   },
+   {
+    "prefix": "10.10.20.0/24",
+    "vlan": {
+     "vid": 20,
+     "name": "SERVER"
+    }
+   },
+   {
+    "prefix": "192.168.40.0/24",
+    "vlan": {
+     "vid": 40,
+     "name": "TRUSTED"
+    }
+   },
+   {
+    "prefix": "192.168.50.0/24",
+    "vlan": {
+     "vid": 50,
+     "name": "IOT"
+    }
+   }
+  ]
+ },
+ "/api/dcim/devices/": {
+  "count": 6,
+  "next": null,
+  "results": [
+   {
+    "id": 1,
+    "name": "fritzbox",
+    "role": {
+     "slug": "isp-router",
+     "name": "isp router"
+    },
+    "device_type": {
+     "model": "FRITZ!Box 7590",
+     "manufacturer": {
+      "name": "AVM"
+     }
+    },
+    "primary_ip4": {
+     "address": "192.168.178.1/24"
+    },
+    "platform": {
+     "name": "FRITZ!OS 8"
+    },
+    "status": {
+     "value": "active"
+    },
+    "custom_fields": {}
+   },
+   {
+    "id": 2,
+    "name": "heimdall",
+    "role": {
+     "slug": "firewall",
+     "name": "firewall"
+    },
+    "device_type": {
+     "model": "M720q",
+     "manufacturer": {
+      "name": "Lenovo"
+     }
+    },
+    "primary_ip4": {
+     "address": "10.10.10.1/24"
+    },
+    "platform": {
+     "name": "OPNsense 26.1"
+    },
+    "status": {
+     "value": "active"
+    },
+    "custom_fields": {}
+   },
+   {
+    "id": 3,
+    "name": "hvergelmir",
+    "role": {
+     "slug": "core-switch",
+     "name": "core switch"
+    },
+    "device_type": {
+     "model": "Catalyst 2960-X",
+     "manufacturer": {
+      "name": "Cisco"
+     }
+    },
+    "primary_ip4": {
+     "address": "10.10.10.4/24"
+    },
+    "platform": {
+     "name": "IOS 15.2"
+    },
+    "status": {
+     "value": "active"
+    },
+    "custom_fields": {}
+   },
+   {
+    "id": 4,
+    "name": "walkuere",
+    "role": {
+     "slug": "access-point",
+     "name": "access point"
+    },
+    "device_type": {
+     "model": "EAP650",
+     "manufacturer": {
+      "name": "TP-Link"
+     }
+    },
+    "primary_ip4": {
+     "address": "10.10.10.7/24"
+    },
+    "platform": {
+     "name": "Omada 5"
+    },
+    "status": {
+     "value": "active"
+    },
+    "custom_fields": {}
+   },
+   {
+    "id": 5,
+    "name": "valhalla",
+    "role": {
+     "slug": "nas",
+     "name": "nas"
+    },
+    "device_type": {
+     "model": "ThinkPad T470 + USB-HDD",
+     "manufacturer": {
+      "name": "Lenovo"
+     }
+    },
+    "primary_ip4": {
+     "address": "10.10.20.16/24"
+    },
+    "platform": {
+     "name": "OpenMediaVault 7"
+    },
+    "status": {
+     "value": "planned"
+    },
+    "custom_fields": {}
+   },
+   {
+    "id": 6,
+    "name": "pve1",
+    "role": {
+     "slug": "server",
+     "name": "server"
+    },
+    "device_type": {
+     "model": "alter PC",
+     "manufacturer": {
+      "name": "Eigenbau"
+     }
+    },
+    "primary_ip4": {
+     "address": "10.10.10.21/24"
+    },
+    "platform": {
+     "name": "Proxmox VE 9"
+    },
+    "status": {
+     "value": "active"
+    },
+    "custom_fields": {}
+   }
+  ]
+ },
+ "/api/dcim/interfaces/": {
+  "count": 17,
+  "next": null,
+  "results": [
+   {
+    "id": 101,
+    "device": {
+     "id": 1,
+     "name": "fritzbox"
+    },
+    "name": "cable",
+    "label": "Cable",
+    "type": {
+     "value": "other"
+    },
+    "mode": null,
+    "untagged_vlan": null,
+    "tagged_vlans": []
+   },
+   {
+    "id": 102,
+    "device": {
+     "id": 1,
+     "name": "fritzbox"
+    },
+    "name": "lan1",
+    "label": "1G",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": null,
+    "untagged_vlan": null,
+    "tagged_vlans": []
+   },
+   {
+    "id": 103,
+    "device": {
+     "id": 1,
+     "name": "fritzbox"
+    },
+    "name": "lan2",
+    "label": "1G",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": null,
+    "untagged_vlan": null,
+    "tagged_vlans": []
+   },
+   {
+    "id": 104,
+    "device": {
+     "id": 2,
+     "name": "heimdall"
+    },
+    "name": "wan",
+    "label": "",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": null,
+    "untagged_vlan": null,
+    "tagged_vlans": []
+   },
+   {
+    "id": 105,
+    "device": {
+     "id": 2,
+     "name": "heimdall"
+    },
+    "name": "lan",
+    "label": "",
+    "type": {
+     "value": "2.5gbase-t"
+    },
+    "mode": {
+     "value": "tagged"
+    },
+    "untagged_vlan": null,
+    "tagged_vlans": [
+     {
+      "vid": 10
+     },
+     {
+      "vid": 20
+     },
+     {
+      "vid": 40
+     },
+     {
+      "vid": 50
+     }
+    ]
+   },
+   {
+    "id": 106,
+    "device": {
+     "id": 3,
+     "name": "hvergelmir"
+    },
+    "name": "Gi1/0/1",
+    "label": "1",
+    "type": {
+     "value": "2.5gbase-t"
+    },
+    "mode": {
+     "value": "tagged"
+    },
+    "untagged_vlan": null,
+    "tagged_vlans": [
+     {
+      "vid": 10
+     },
+     {
+      "vid": 20
+     },
+     {
+      "vid": 40
+     },
+     {
+      "vid": 50
+     }
+    ]
+   },
+   {
+    "id": 107,
+    "device": {
+     "id": 3,
+     "name": "hvergelmir"
+    },
+    "name": "Gi1/0/2",
+    "label": "2",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": {
+     "value": "tagged"
+    },
+    "untagged_vlan": {
+     "vid": 10
+    },
+    "tagged_vlans": [
+     {
+      "vid": 40
+     },
+     {
+      "vid": 50
+     }
+    ]
+   },
+   {
+    "id": 108,
+    "device": {
+     "id": 3,
+     "name": "hvergelmir"
+    },
+    "name": "Gi1/0/3",
+    "label": "3",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": {
+     "value": "access"
+    },
+    "untagged_vlan": {
+     "vid": 20
+    },
+    "tagged_vlans": []
+   },
+   {
+    "id": 109,
+    "device": {
+     "id": 3,
+     "name": "hvergelmir"
+    },
+    "name": "Gi1/0/4",
+    "label": "4",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": {
+     "value": "access"
+    },
+    "untagged_vlan": {
+     "vid": 40
+    },
+    "tagged_vlans": []
+   },
+   {
+    "id": 110,
+    "device": {
+     "id": 3,
+     "name": "hvergelmir"
+    },
+    "name": "Gi1/0/5",
+    "label": "5",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": null,
+    "untagged_vlan": null,
+    "tagged_vlans": []
+   },
+   {
+    "id": 111,
+    "device": {
+     "id": 3,
+     "name": "hvergelmir"
+    },
+    "name": "Gi1/0/6",
+    "label": "6",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": null,
+    "untagged_vlan": null,
+    "tagged_vlans": []
+   },
+   {
+    "id": 112,
+    "device": {
+     "id": 3,
+     "name": "hvergelmir"
+    },
+    "name": "Gi1/0/7",
+    "label": "7",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": null,
+    "untagged_vlan": null,
+    "tagged_vlans": []
+   },
+   {
+    "id": 113,
+    "device": {
+     "id": 3,
+     "name": "hvergelmir"
+    },
+    "name": "Gi1/0/8",
+    "label": "8",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": null,
+    "untagged_vlan": null,
+    "tagged_vlans": []
+   },
+   {
+    "id": 114,
+    "device": {
+     "id": 3,
+     "name": "hvergelmir"
+    },
+    "name": "Te1/0/1",
+    "label": "SFP+1",
+    "type": {
+     "value": "10gbase-x-sfpp"
+    },
+    "mode": {
+     "value": "tagged"
+    },
+    "untagged_vlan": null,
+    "tagged_vlans": [
+     {
+      "vid": 10
+     },
+     {
+      "vid": 20
+     }
+    ]
+   },
+   {
+    "id": 115,
+    "device": {
+     "id": 4,
+     "name": "walkuere"
+    },
+    "name": "eth0",
+    "label": "",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": null,
+    "untagged_vlan": null,
+    "tagged_vlans": []
+   },
+   {
+    "id": 116,
+    "device": {
+     "id": 5,
+     "name": "valhalla"
+    },
+    "name": "eth0",
+    "label": "",
+    "type": {
+     "value": "1000base-t"
+    },
+    "mode": null,
+    "untagged_vlan": null,
+    "tagged_vlans": []
+   },
+   {
+    "id": 117,
+    "device": {
+     "id": 6,
+     "name": "pve1"
+    },
+    "name": "enp1s0",
+    "label": "",
+    "type": {
+     "value": "10gbase-x-sfpp"
+    },
+    "mode": null,
+    "untagged_vlan": null,
+    "tagged_vlans": []
+   }
+  ]
+ },
+ "/api/dcim/cables/": {
+  "count": 5,
+  "next": null,
+  "results": [
+   {
+    "a_terminations": [
+     {
+      "object_type": "dcim.interface",
+      "object_id": 102
+     }
+    ],
+    "b_terminations": [
+     {
+      "object_type": "dcim.interface",
+      "object_id": 104
+     }
+    ]
+   },
+   {
+    "a_terminations": [
+     {
+      "object_type": "dcim.interface",
+      "object_id": 105
+     }
+    ],
+    "b_terminations": [
+     {
+      "object_type": "dcim.interface",
+      "object_id": 106
+     }
+    ]
+   },
+   {
+    "a_terminations": [
+     {
+      "object_type": "dcim.interface",
+      "object_id": 107
+     }
+    ],
+    "b_terminations": [
+     {
+      "object_type": "dcim.interface",
+      "object_id": 115
+     }
+    ]
+   },
+   {
+    "a_terminations": [
+     {
+      "object_type": "dcim.interface",
+      "object_id": 108
+     }
+    ],
+    "b_terminations": [
+     {
+      "object_type": "dcim.interface",
+      "object_id": 116
+     }
+    ]
+   },
+   {
+    "a_terminations": [
+     {
+      "object_type": "dcim.interface",
+      "object_id": 114
+     }
+    ],
+    "b_terminations": [
+     {
+      "object_type": "dcim.interface",
+      "object_id": 117
+     }
+    ]
+   }
+  ]
+ },
+ "/api/virtualization/virtual-machines/": {
+  "count": 1,
+  "next": null,
+  "results": [
+   {
+    "name": "netbox",
+    "device": {
+     "name": "pve1"
+    },
+    "primary_ip4": {
+     "address": "10.10.10.213/24"
+    },
+    "description": "IPAM",
+    "custom_fields": {
+     "vmid": 2213,
+     "kind": "CT",
+     "icon": "netbox",
+     "net": "10"
+    }
+   }
+  ]
+ }
+}

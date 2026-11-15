@@ -1,0 +1,4 @@
+icons: [vaultwarden]
+note: "Passwörter"
+host: vault
+exposure: local

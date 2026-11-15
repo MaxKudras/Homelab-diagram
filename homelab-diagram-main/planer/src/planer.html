@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Homelab-Planer</title>
+<style>
+/*FONTS*/
+:root { --bg:#0b0f15; --panel:#111821; --panel2:#161f2b; --border:#253042; --text:#e6edf3; --muted:#8b98a9; --sel:#58a6ff; --bad:#ff7b72; --warn:#e3b341; --ok:#3fb950; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.4 "Fira Sans", system-ui, sans-serif; overflow: hidden; }
+button, select, input, textarea { font: inherit; color: var(--text); }
+button { background: var(--panel2); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+button:hover { border-color: var(--sel); }
+button.on { background: #1f3550; border-color: var(--sel); }
+button.danger { border-color: #6b2a2a; color: #ffb3ad; }
+button.mini { padding: 2px 7px; font-size: 12px; }
+button.del { color: #ffb3ad; }
+input, select, textarea { background: #0d131b; border: 1px solid var(--border); border-radius: 6px; padding: 5px 7px; width: 100%; min-width: 0; }
+input[type=checkbox] { width: auto; }
+#app { display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: 210px 1fr 380px; height: 100%; }
+header { grid-column: 1 / 4; display: flex; gap: 6px; align-items: center; padding: 7px 10px; background: var(--panel); border-bottom: 1px solid var(--border); overflow-x: auto; }
+header .brand { font-weight: 700; margin-right: 8px; white-space: nowrap; }
+header .brand small { color: var(--muted); font-weight: 400; }
+header > * { flex: none; }
+header .sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; flex: none; }
+header select { width: auto; }
+header input#search { width: 170px; flex: none; }
+.tabs { display: flex; gap: 4px; }
+#tab-check b.ok { color: var(--ok); } #tab-check b.warn { color: var(--warn); } #tab-check b.bad { color: var(--bad); }
+#palette { background: var(--panel); border-right: 1px solid var(--border); padding: 10px; overflow-y: auto; }
+#palette h4 { margin: 4px 0 8px; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+#palette-roles { display: grid; gap: 6px; }
+#palette-roles button { text-align: left; }
+#palette .help { color: var(--muted); font-size: 12.5px; margin-top: 14px; }
+#palette .help p { margin: 0 0 7px; }
+main { position: relative; overflow: hidden; }
+#stage, #svg { width: 100%; height: 100%; display: block; }
+#svg { touch-action: none; background: var(--bg); cursor: grab; }
+#svg .card, #svg .panel { cursor: move; }
+#svg .cable .hit { cursor: pointer; }
+#svg .handle { cursor: crosshair; }
+#svg .handle.via, #svg .handle.resize { cursor: move; }
+#tabview { position: absolute; inset: 0; overflow: auto; padding: 14px 18px 40px; }
+#tabview h3 small { color: var(--muted); font-weight: 400; }
+table.grid { border-collapse: collapse; width: 100%; margin-bottom: 18px; }
+table.grid th, table.grid td { border-bottom: 1px solid var(--border); padding: 5px 8px; text-align: left; vertical-align: top; }
+table.grid th { color: var(--muted); font-weight: 600; font-size: 12px; }
+table.grid tr:hover td { background: var(--panel2); cursor: pointer; }
+table.grid tr.bad td { color: var(--bad); }
+.mono { font-family: "Fira Code", monospace; font-size: 12.5px; }
+ul.msgs { padding-left: 18px; } ul.msgs li { margin: 4px 0; cursor: pointer; } li.bad { color: var(--bad); } li.warn { color: var(--warn); }
+.okbox { color: var(--ok); }
+#insp { background: var(--panel); border-left: 1px solid var(--border); padding: 10px 12px 60px; overflow-y: auto; }
+#insp h3 { margin: 2px 0 10px; } #insp h3 small { color: var(--muted); font-weight: 400; font-size: 13px; }
+#insp .row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+fieldset { border: 1px solid var(--border); border-radius: 8px; margin: 0 0 10px; padding: 6px 10px 10px; }
+legend { color: var(--muted); font-size: 12px; padding: 0 4px; }
+label.f { display: block; margin: 6px 0; } label.f > span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 2px; }
+label.f small, .hint { color: var(--muted); font-size: 12px; }
+.list { border: 1px solid var(--border); border-radius: 8px; margin: 0 0 10px; padding: 6px 8px; }
+.list .lh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.list .scroll { overflow-x: auto; }
+.list table { border-collapse: collapse; } .list th { color: var(--muted); font-size: 11px; font-weight: 600; text-align: left; padding: 2px 3px; }
+.list td { padding: 2px 3px; } .list td input, .list td select { min-width: 74px; padding: 3px 5px; font-size: 12.5px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid; border-radius: 12px; padding: 2px 8px; font-size: 12px; }
+details.icons summary { cursor: pointer; color: var(--sel); margin: 6px 0; }
+.igrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 4px; max-height: 260px; overflow-y: auto; }
+.ib { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; font-size: 10px; overflow: hidden; }
+.ib img { width: 26px; height: 26px; } .ib span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+footer { grid-column: 1 / 4; display: flex; gap: 14px; align-items: center; padding: 4px 10px; background: var(--panel); border-top: 1px solid var(--border); color: var(--muted); font-size: 12.5px; }
+footer #status { color: var(--text); }
+footer .zoom { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+.mobile { display: none; }
+@media (max-width: 900px) {
+  #app { grid-template-columns: 1fr; }
+  header, footer { grid-column: 1; }
+  .mobile { display: inline-block; }
+  #palette, #insp { position: fixed; top: 46px; bottom: 34px; z-index: 5; width: min(88vw, 380px); transform: translateX(-105%); transition: transform .2s; box-shadow: 0 0 30px #000a; }
+  #palette { left: 0; } #insp { right: 0; transform: translateX(105%); }
+  body.show-pal #palette, body.show-insp #insp { transform: none; }
+  header .brand small, footer #saved { display: none; }
+  header .brand { font-size: 13px; order: -2; } header .mobile { order: -1; }
+  header button, header select { padding: 5px 8px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <span class="brand">Homelab-Planer <small>· Diagramm von Hand</small></span>
+    <button id="btn-menu" class="mobile" title="Geräte">☰</button>
+    <button id="btn-new">Neu</button>
+    <button id="btn-open">Öffnen …</button>
+    <button id="btn-save" title="Strg+S">YAML speichern</button>
+    <select id="examples"><option value="">Beispiel laden …</option></select>
+    <input type="file" id="file" accept=".yaml,.yml,.json" hidden>
+    <span class="sep"></span>
+    <button id="btn-undo" title="Strg+Z">↶</button>
+    <button id="btn-redo" title="Strg+Y">↷</button>
+    <button id="btn-hist" title="frühere Stände aus dem Browser">Verlauf</button>
+    <button id="btn-auto">Automatisch anordnen</button>
+    <span class="sep"></span>
+    <div class="tabs">
+      <button data-tab="draw" class="on">Zeichnen</button>
+      <button data-tab="lists">Listen</button>
+      <button data-tab="ips">IP-Liste</button>
+      <button data-tab="check" id="tab-check">Prüfung</button>
+    </div>
+    <span class="sep"></span>
+    <input id="search" placeholder="Suchen (Name, IP …)">
+    <button id="btn-insp" class="mobile" title="Eigenschaften">⚙</button>
+  </header>
+  <aside id="palette">
+    <h4>Gerät hinzufügen</h4>
+    <div id="palette-roles"></div>
+    <div class="help">
+      <h4>Bedienung</h4>
+      <p><b>Ziehen</b> einer Karte verschiebt sie (Raster 8 px, blaue Hilfslinien richten aus).</p>
+      <p><b>Kabel:</b> vom kleinen Kreis an der Karte oder von einer Buchse auf eine andere Karte ziehen.</p>
+      <p><b>Doppelklick</b> auf ein Kabel setzt einen Wegpunkt.</p>
+      <p><b>Shift</b> + Klick oder Rahmen: mehrere auswählen.</p>
+      <p>Leere Fläche ziehen = verschieben, Mausrad/zwei Finger = zoomen.</p>
+      <p>Pfeiltasten bewegen, Entf löscht, Strg+Z rückgängig.</p>
+      <p>Speichern: automatisch im Browser. Für das Diagramm-Tool „YAML speichern“, dann <span class="mono">python3 build.py --lab=datei.yaml</span>.</p>
+    </div>
+  </aside>
+  <main>
+    <div id="stage"><svg id="svg" xmlns="http://www.w3.org/2000/svg"><g id="viewport"></g></svg></div>
+    <div id="tabview" hidden></div>
+  </main>
+  <aside id="insp"></aside>
+  <footer>
+    <span id="status">bereit</span>
+    <span id="saved"></span>
+    <span class="zoom"><button id="btn-zout" class="mini">−</button><span id="zoomv">100 %</span><button id="btn-zin" class="mini">+</button><button id="btn-fit" class="mini">Einpassen</button></span>
+  </footer>
+</div>
+<script>/*DATA*/</script>
+<script>/*YAML*/</script>
+<script>/*CORE*/</script>
+<script>/*DRAW*/</script>
+<script>/*APP*/</script>
+</body>
+</html>

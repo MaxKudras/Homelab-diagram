@@ -45,12 +45,16 @@ python3 setup.py                # installs the fonts from fonts/, checks rsvg-co
 python3 build.py                # → out/homelab.svg + out/homelab.png (redacted)
 python3 build.py --unredacted   # → out/homelab-unredacted.svg + .png
 python3 build.py --examples     # every lab in examples/ → out/examples/
-python3 build.py --layout=cluster   # auto (default) | rows | cluster | flow | all
+python3 build.py --layout=cluster   # auto (default) | rows | cluster | flow | manual | all
 python3 build.py --collect      # pull data from the sources in sources.yaml first
 python3 -m unittest discover tests
 python3 build.py --ips=table    # + list of every IP in use (table | inline | both | sheet)
 python3 build.py --variants     # render the default and all IP variants
 ```
+
+### Planning tool (v4)
+
+`planer/planer.html` is a separate, offline editor in one HTML file (desktop and phone): drag cards, draw cables from port to port, set waypoints, edit every field, see the IP list and the checks live, autosave in the browser. **YAML speichern** writes a schema-2 lab with positions, and `python3 build.py --lab=<file>` draws exactly that layout (`manual`). Rebuild the file after changing `planer/src/` with `python3 planer/build_planer.py`.
 
 The service icons are **not** in this repo, `fetch_icons.py` downloads them from [homarr-labs/dashboard-icons](https://github.com/homarr-labs/dashboard-icons). Only my own small glyphs (`icons/glyph-*.svg`: CPU, RAM, SSD, …) are included.
 

@@ -18,8 +18,31 @@ def has_positions(lab):
     return any(d.extra.get("pos") for d in lab.devices)
 
 
+def _shift_right(lab):
+    """Cards dragged left of the margin in the planner: move the whole drawing right instead of cutting it."""
+    man = lab.raw.get("layout") or {}
+    xs = [float(d.extra["pos"]["x"]) for d in lab.devices if d.extra.get("pos")]
+    xs += [float(p["x"]) for p in (man.get("panels") or {}).values() if p and p.get("x") is not None]
+    xs += [float(v[0]) for l in lab.links for v in (l.extra.get("via") or [])]
+    dx = T.MARGIN - min(xs) if xs and min(xs) < T.MARGIN else 0
+    if not dx:
+        return
+    for d in lab.devices:
+        if d.extra.get("pos"):
+            d.extra["pos"] = dict(d.extra["pos"], x=float(d.extra["pos"]["x"]) + dx)
+    for p in (man.get("panels") or {}).values():
+        if p and p.get("x") is not None:
+            p["x"] = float(p["x"]) + dx
+    for l in lab.links:
+        if l.extra.get("via"):
+            l.extra["via"] = [[float(v[0]) + dx, float(v[1])] for v in l.extra["via"]]
+    if (man.get("internet") or {}).get("x") is not None:
+        man["internet"]["x"] = float(man["internet"]["x"]) + dx
+
+
 def layout_manual(R):
     lab = R.lab
+    _shift_right(lab)
     R.layout_cluster()                      # sensible places for everything first
     man = lab.raw.get("layout") or {}
     for d in lab.devices:

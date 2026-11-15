@@ -55,6 +55,9 @@ Herkunft des Tools: Es stammt ursprünglich von *u/goblinmine* (MIT-Lizenz, `LIC
   | `panels.py` | Kopf, Internet-Wolke, Fernzugriff, Cloud-Dienste, Netzwerke, Legende (nur genutzte Einträge), Portweiterleitungen, Flow-Panels (`media_pipeline`, allgemeines `flow`) |
   | `ips.py` | alle genutzten IPs + IP-Liste |
   | `qa.py` | Prüfung des fertigen Bilds: Text auf Text, Kabel durch Karten, Kabel durch Text |
+  | `render2.py`, `route2.py`, `layouts_flow.py` | Ansichten `cluster`/`flow` und Flächen-Router (v3) |
+  | `optimize.py` | Optimierer für `cluster`: Aufteilung der Spalten links/rechts je Switch (v4) |
+  | `layouts_manual.py` | Ansicht `manual`: Positionen aus der YAML bzw. dem Planungs-Tool (v4) |
   | `sources/` | Datenquellen (nur lesend): `ansible`, `netbox`, `proxmox`, `prometheus`, `opnsense`, dazu `merge` und `collect` |
 
 - `inventory.yaml`: das Original-Lab von u/goblinmine (Schema 1, wird über `legacy.py` gelesen).
@@ -73,14 +76,15 @@ Herkunft des Tools: Es stammt ursprünglich von *u/goblinmine* (MIT-Lizenz, `LIC
 5. **Zeichnen**: Karten → Kabel (mit dunkler Aussparung, damit Kreuzungen lesbar bleiben) → Buchsen + VLAN-Striche → Speed-Labels.
 6. **QA** (`qa.run`): Text auf Text, Kabel durch Karten oder Text, **Kabel aufeinander** (zu dicht parallel). Bei einem Fund bricht `build.py` ab. Mit `--no-qa` lässt sich das Bild trotzdem ansehen.
 
-### Ansichten / Layouts (v3, `--layout=`)
+### Ansichten / Layouts (v3/v4, `--layout=`)
 
 | Layout | Modul | Gedacht für |
 |---|---|---|
 | `rows` | `render.py` (v2) | kleine Labs, sieht aus wie das Original. Bei großen Labs entstehen übereinanderliegende Kabel, die die QA jetzt meldet. |
-| `cluster` | `render2.py` | **große Labs**: Kette oben, darunter je Switch ein **Baum-Block**. Kinder stehen in Spalten, jedes Kind hat eine eigene Bahn links und tritt von links ein. Die Bahn-Reihenfolge des **Kamms** (`Renderer2.comb`) macht Kreuzungen unter einem Switch unmöglich. |
+| `cluster` | `render2.py` + `optimize.py` | **große Labs**: Kette oben, darunter je Switch ein **Baum-Block**. Seit v4 mit **zweiseitigem Kamm**: Spalten links der Ports treten von links ein, Spalten rechts davon von rechts. Jede Seite ist für sich kreuzungsfrei (`Renderer2.comb`). Der **Optimierer** (`optimize.py`) sucht per Koordinatenabstieg die Aufteilung (Spalten links/rechts, Größen) mit der kürzesten geschätzten Kabellänge, Höhe und Breite. |
 | `flow` | `layouts_flow.py` + `render2.py` | Lesen von links nach rechts: alle Panels links, Kette senkrecht, Blöcke rechts daneben. Zum Vergleich gedacht, hat mehr Kreuzungen. |
-| `auto` (Standard) | `build.auto_layout` | `rows` bis 8 Geräte unter den Switches, sonst `cluster` |
+| `manual` | `layouts_manual.py` + `render2.py` | **von Hand** (Planungs-Tool): `pos: {x, y, w}` je Gerät, `via: [[x, y], …]` und `sides` je Verbindung, `layout.panels.<key>: {x, y}`, `layout.internet.x`. Geräte ohne `pos` platziert der Optimierer. Kabel mit `via` laufen genau durch die Punkte (rechtwinklig ergänzt), sonst nimmt der A*-Router den Weg. Liegt etwas links vom Rand, wird alles nach rechts verschoben. |
+| `auto` (Standard) | `build.auto_layout` | `manual`, sobald ein Gerät `pos` hat, sonst `rows` bis 8 Geräte unter den Switches, sonst `cluster` |
 
 - **Gemeinsam für `cluster`/`flow`:**
   - `route2.py` ist der **Flächen-Router**: A* auf 8-px-Raster, Abstand je Linienbreite (16 px dünn / 24 px Trunk), Kreuzungen nur rechtwinklig und teuer, wenige Knicke, kurzer gerader Austritt an Karten. Was der Kamm verlegt hat, sperrt er als Hindernis (`commit_path`).
@@ -89,6 +93,23 @@ Herkunft des Tools: Es stammt ursprünglich von *u/goblinmine* (MIT-Lizenz, `LIC
   - Die Canvas wächst eher in die Breite als in die Höhe (`MAX_W`).
 - **Bewertung** (`qa.score`, wird bei jedem Render ausgegeben): Kreuzungen, Kabellänge, Knicke, längstes Kabel, Größe.
 - **Vergleichsseite:** `python3 build.py --examples --layout=all --no-qa > out/examples-all.log; python3 build.py --layout=all --no-qa >> out/examples-all.log; python3 vergleich.py` → `out/vergleich.html` (eine Datei, Bilder eingebettet, am Handy zoombar).
+
+### Planungs-Tool (`planer/`, v4)
+
+Separates Werkzeug, um das Lab **von Hand** zu planen: **eine HTML-Datei** `planer/planer.html`. Sie läuft offline im Browser und am Handy und enthält Fonts, Icons und Beispiele.
+
+| Datei | Inhalt |
+|---|---|
+| `planer/src/planer.html` | Vorlage: Oberfläche (Kopfleiste, Geräte-Palette, Zeichenfläche, Eigenschaften), CSS inkl. Handy-Schubladen |
+| `planer/src/yaml.js` | eigener YAML-Leser/-Schreiber (keine fremde Bibliothek), versteht auch Anker und Flow-Stil |
+| `planer/src/core.js` | Datenmodell wie Schema 2, Kartengeometrie wie `render2.Node`, Kabel-Enden, IP-Liste, Prüfung (wie `validate.py` + Karten-Überlappung), Umwandlung alter `inventory.yaml`, Vorlagen je Rolle |
+| `planer/src/draw.js` | SVG in der Optik des Diagramms (Ordner-Reiter, Buchsen, VLAN-Striche, Trunks, Panels, Internet-Wolke) |
+| `planer/src/app.js` | Bedienung: Ziehen (8-px-Raster, Hilfslinien), Mehrfachauswahl, Kabel von Buchse/Kreis ziehen, Wegpunkte (Doppelklick), Server-Breite, Formulare, Listen, IP-Liste, Prüfung, Autospeichern + Verlauf, Rückgängig, Öffnen/Speichern YAML, Suche, Pinch-Zoom |
+| `planer/build_planer.py` | baut `planer/planer.html` (Fonts + Icons + Beispiele eingebettet). **Nach jeder Änderung in `planer/src/` ausführen und committen.** |
+
+- **Rundreise:** Im Planer „YAML speichern“, dann `python3 build.py --lab=datei.yaml`. Das Ergebnis ist das Layout `manual`, mit QA wie immer.
+- **Tests:** `tests/test_planer.py` prüft, ob `planer.html` aktuell ist. `tests/planer_roundtrip.js` (Node + Playwright) testet Laden, Ziehen, Drucker anlegen, Kabel ziehen, Umbenennen, Export und Render ohne QA-Fund.
+- Screenshots: Node-Playwright (`require('playwright')`). Python-Playwright ist nicht installiert.
 
 ### Sicherheitsnetze
 
@@ -120,7 +141,9 @@ python3 build.py --unredacted   # → out/homelab-unredacted.*
 python3 build.py --ips=table    # IP-Varianten: table | inline | both | sheet → out/homelab-ips-<variante>.*
 python3 build.py --variants     # alle Varianten auf einmal (Standard + 4 IP-Varianten)
 python3 build.py --examples     # alle Labs in examples/ → out/examples/
-python3 build.py --layout=cluster   # Ansicht wählen: auto (Standard) | rows | cluster | flow | all
+python3 build.py --layout=cluster   # Ansicht wählen: auto (Standard) | rows | cluster | flow | manual | all
+python3 build.py --export-positions # Positionen der Ansicht → out/<name>-positionen.yaml (für den Planer)
+python3 planer/build_planer.py      # Planungs-Tool neu bauen → planer/planer.html
 python3 build.py --lab=DATEI    # ein anderes Lab (Schema 1 oder 2)
 python3 build.py --collect      # erst Daten aus sources.yaml holen → inventory.generated.yaml (+ Änderungsbericht)
 python3 -m unittest discover tests   # Tests: Quellen, alle Labs × Layouts ohne QA-Fund, Kreuzungs-Grenzen (~30 s)
