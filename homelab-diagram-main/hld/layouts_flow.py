@@ -55,11 +55,12 @@ def layout_flow(R):
         nodes = [R.nodes[i] for i in ids]
         if prev is not None:
             y = prev + CHAIN_GAP + T.TAB
+        gap = 120 if any(l.a_dev in ids and l.b_dev in ids for l in lab.links) else 40
         x = x0
         for n in nodes:
             n.x, n.y = x, y
-            x += n.w + 40
-        chain_r = max(chain_r, x - 40)
+            x += n.w + gap
+        chain_r = max(chain_r, x - gap)
         prev = max(n.y + n.h for n in nodes)
     first = [R.nodes[i] for i in R.chain[0]] if R.chain else []
     if first and first[0].kind == "isp":
