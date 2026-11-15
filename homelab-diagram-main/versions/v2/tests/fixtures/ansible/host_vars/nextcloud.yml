@@ -1,0 +1,4 @@
+icons: [nextcloud]
+note: "Dateien, Kalender"
+host: cloud
+exposure: public

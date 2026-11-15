@@ -1,0 +1,60 @@
+# BEISPIELDATEN – ein kleines Lab: Router, Firewall, Switch, 4 Geräte, 1 Server.
+# Zeigt, dass ein kleines Lab genauso aussieht wie das Original-Diagramm.
+schema: 2
+meta: {title: "Kleines Homelab", title_redacted: "Kleines Homelab", date: "Beispiel", watermark: "hld v2", domain: "example.net"}
+redact: {domain: true, domain_placeholder: "redacted.net", ssid_names: true}
+networks:
+  - {key: "10", name: HOME, subnet: "192.168.10.0/24", color: "#58a6ff", note: "alles Vertrauenswürdige"}
+  - {key: "20", name: SERVER, subnet: "10.0.20.0/24", color: "#f0883e", note: "Dienste"}
+  - {key: "30", name: IOT, subnet: "192.168.30.0/24", color: "#3fb950", note: "nur Internet"}
+  - {key: "wan", tag: Router, name: WAN, subnet: "192.168.1.0/24", color: "#f85149", note: "Uplink zum Router"}
+internet: {label: "Internet", sub: "Glasfaser", speed: {down: "1000 Mbit/s", up: "500 Mbit/s"}}
+cloud:
+  - {icon: cloudflare, name: "Cloudflare", note: "DNS"}
+devices:
+  - {id: router, role: isp_router, name: "Router", type: "ISP", model: "Glasfaser-Router", ip: "192.168.1.1", os: "Provider-Firmware",
+     net: wan, icons: [fritzbox],
+     ports: [{id: fiber, label: "Fiber", kind: coax, uplink: true, note: internet}, {id: lan1, label: "1G", note: "Firewall"}, {id: lan2, label: "1G"}]}
+  - {id: fw, role: firewall, name: "pfSense", type: "firewall", model: "Mini-PC · 2 NICs", os: "pfSense 2.8", ip: "10.0.20.1",
+     internal: fw, net: "20", border: trunk, icons: [opnsense],
+     services: [{icon: adguard, name: "AdGuard", note: "DNS"}, {icon: wireguard, name: "WireGuard", note: "VPN"}],
+     ports: [{id: wan, ip: ".2"}, {id: lan, ip: ".1"}]}
+  - {id: sw, role: switch, name: "Switch", type: "switch", model: "TP-Link TL-SG108E", ip: "10.0.20.2", internal: switch, os: "1.0.0",
+     net: "20", border: trunk, icons: [tplink],
+     ports: [{id: p1, label: "1", tagged: ["10", "20", "30"]}, {id: p2, label: "2", untagged: "10"}, {id: p3, label: "3", untagged: "10"},
+             {id: p4, label: "4", untagged: "30"}, {id: p5, label: "5", tagged: ["10", "20"]}, {id: p6, label: "6"}, {id: p7, label: "7"},
+             {id: p8, label: "8", tagged: ["10", "20", "30"]}]}
+  - {id: pc, role: workstation, name: "PC", type: "workstation", model: "Desktop", ip: "192.168.10.20", internal: pc, os: "Windows 11", net: "10", icons: [windows]}
+  - {id: laptop, role: workstation, name: "Laptop", type: "laptop", model: "ThinkPad", ip: "192.168.10.21", internal: laptop, os: "Debian 13", net: "10", icons: [debian]}
+  - {id: pi, role: iot, name: "Pi", type: "Home Assistant", model: "Raspberry Pi 4", ip: "192.168.30.5", host: ha, os: "HAOS 16", net: "30", icons: [raspberrypi]}
+  - {id: ap, role: ap, name: "AP", type: "access point", model: "UniFi U6 Lite", ip: "10.0.20.3", internal: ap, net: "20", border: trunk, icons: [unifi],
+     ssids: [{name: "Zuhause", redacted: "Home", vlan: "10"}, {name: "Dinge", redacted: "IoT", vlan: "30"}]}
+  - id: server
+    role: server
+    name: "pve"
+    type: "server"
+    model: "Proxmox Server"
+    os: "Proxmox VE 9"
+    ip: "10.0.20.10"
+    internal: pve
+    net: "20"
+    border: trunk
+    icons: [proxmox]
+    hw:
+      - {icon: glyph-cpu, label: "CPU", value: "i5-12400", sub: "6 Kerne"}
+      - {icon: glyph-ram, label: "MEMORY", value: "32 GB DDR4", sub: "~28 GB frei"}
+    guests:
+      - {id: 101, ip: ".101", net: "20", group: "Medien", name: "Jellyfin", icons: [jellyfin], note: "Filme", host: kino, exposure: local}
+      - {id: 102, ip: ".102", net: "20", group: "Medien", name: "Immich", icons: [immich], note: "Fotos", host: fotos, exposure: public}
+      - {id: 103, ip: ".103", net: "20", group: "Werkzeuge", name: "Paperless", icons: [paperless], note: "Dokumente", internal: paperless}
+      - {id: 104, ip: ".104", net: "20", group: "Werkzeuge", name: "Vaultwarden", icons: [vaultwarden], note: "Passwörter", host: vault, exposure: local}
+links:
+  - {a: router.lan1, b: fw.wan, speed: 1G, net: wan}
+  - {a: fw.lan, b: sw.p1, speed: 1G, vlans: ["10", "20", "30"]}
+  - {a: sw.p2, b: pc, speed: 1G, net: "10"}
+  - {a: sw.p3, b: laptop, speed: 1G, net: "10"}
+  - {a: sw.p4, b: pi, speed: 100M, net: "30"}
+  - {a: sw.p5, b: ap, speed: 1G, vlans: ["10", "20", "30"]}
+  - {a: sw.p8, b: server, speed: 1G, vlans: ["10", "20", "30"]}
+port_forwards:
+  - {port: "51820", proto: "UDP", to: "WireGuard", what: "Fernzugriff"}

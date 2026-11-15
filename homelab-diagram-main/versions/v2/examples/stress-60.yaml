@@ -1,0 +1,1247 @@
+# TESTDATEN – automatisch erzeugt von make_stress.py
+schema: 2
+meta:
+  title: Stresstest · 60 Geräte
+  title_redacted: Stresstest · 60 Geräte
+  date: Testdaten
+  watermark: hld v2
+  domain: example.com
+redact:
+  domain: true
+  domain_placeholder: redacted.com
+  ssid_names: true
+networks:
+- key: '10'
+  name: MGMT
+  subnet: 10.10.10.0/24
+  color: '#e3b341'
+  note: Testnetz
+- key: '20'
+  name: SERVER
+  subnet: 10.10.20.0/24
+  color: '#58a6ff'
+  note: Testnetz
+- key: '40'
+  name: TRUSTED
+  subnet: 192.168.40.0/24
+  color: '#39c5cf'
+  note: Testnetz
+- key: '50'
+  name: IOT
+  subnet: 192.168.50.0/24
+  color: '#3fb950'
+  note: Testnetz
+- key: '80'
+  name: LAB
+  subnet: 172.16.80.0/24
+  color: '#ff7eb6'
+  note: Testnetz
+- key: wan
+  tag: Modem
+  name: WAN
+  subnet: 192.168.0.0/24
+  color: '#f85149'
+  note: Uplink
+internet:
+  label: Internet
+  sub: Testanschluss
+  speed:
+    down: 1 Gbit/s
+    up: 1 Gbit/s
+devices:
+- id: modem
+  role: isp_router
+  name: Modem
+  type: ISP
+  model: Kabelmodem
+  ip: 192.168.0.1
+  net: wan
+  icons:
+  - fritzbox
+  ports:
+  - id: c
+    label: Cable
+    kind: coax
+    uplink: true
+  - id: l1
+    label: 1G
+- id: fw
+  role: firewall
+  name: Firewall
+  type: router
+  model: Mini-PC
+  ip: 10.10.10.1
+  net: '10'
+  border: trunk
+  icons:
+  - opnsense
+  os: OPNsense
+  services:
+  - icon: wireguard
+    name: WireGuard
+    note: VPN
+  ports:
+  - id: wan
+  - id: a
+  - id: b
+- id: sw1
+  role: switch
+  name: Switch 1
+  type: switch
+  model: 24-Port Managed
+  ip: 10.10.10.2
+  net: '10'
+  border: trunk
+  icons:
+  - cisco
+  ports:
+  - id: p1
+    label: '1'
+    tagged: &id001
+    - '10'
+    - '20'
+    - '40'
+    - '50'
+    - '80'
+  - id: p2
+    label: '2'
+    tagged: *id001
+  - id: p3
+    label: '3'
+    tagged: []
+  - id: p4
+    label: '4'
+    tagged: []
+  - id: p5
+    label: '5'
+    tagged: []
+  - id: p6
+    label: '6'
+    tagged: []
+  - id: p7
+    label: '7'
+    tagged: []
+  - id: p8
+    label: '8'
+    tagged: []
+  - id: p9
+    label: '9'
+    tagged: []
+  - id: p10
+    label: '10'
+    tagged: []
+  - id: p11
+    label: '11'
+    tagged: []
+  - id: p12
+    label: '12'
+    tagged: []
+  - id: p13
+    label: '13'
+    tagged: []
+  - id: p14
+    label: '14'
+    tagged: []
+  - id: p15
+    label: '15'
+    tagged: []
+  - id: p16
+    label: '16'
+    tagged: []
+  - id: x1
+    label: SFP+1
+    kind: sfp
+    tagged: *id001
+  - id: x2
+    label: SFP+2
+    kind: sfp
+    tagged: *id001
+- id: sw2
+  role: switch
+  name: Switch 2
+  type: switch
+  model: 24-Port Managed
+  ip: 10.10.10.3
+  net: '10'
+  border: trunk
+  icons:
+  - cisco
+  ports:
+  - id: p1
+    label: '1'
+    tagged: *id001
+  - id: p2
+    label: '2'
+    tagged: *id001
+  - id: p3
+    label: '3'
+    tagged: []
+  - id: p4
+    label: '4'
+    tagged: []
+  - id: p5
+    label: '5'
+    tagged: []
+  - id: p6
+    label: '6'
+    tagged: []
+  - id: p7
+    label: '7'
+    tagged: []
+  - id: p8
+    label: '8'
+    tagged: []
+  - id: p9
+    label: '9'
+    tagged: []
+  - id: p10
+    label: '10'
+    tagged: []
+  - id: p11
+    label: '11'
+    tagged: []
+  - id: p12
+    label: '12'
+    tagged: []
+  - id: p13
+    label: '13'
+    tagged: []
+  - id: p14
+    label: '14'
+    tagged: []
+  - id: p15
+    label: '15'
+    tagged: []
+  - id: p16
+    label: '16'
+    tagged: []
+  - id: x1
+    label: SFP+1
+    kind: sfp
+    tagged: *id001
+  - id: x2
+    label: SFP+2
+    kind: sfp
+    tagged: *id001
+- id: sw3
+  role: switch
+  name: Switch 3
+  type: switch
+  model: 24-Port Managed
+  ip: 10.10.10.4
+  net: '10'
+  border: trunk
+  icons:
+  - cisco
+  ports:
+  - id: p1
+    label: '1'
+    tagged: *id001
+  - id: p2
+    label: '2'
+    tagged: *id001
+  - id: p3
+    label: '3'
+    tagged: []
+  - id: p4
+    label: '4'
+    tagged: []
+  - id: p5
+    label: '5'
+    tagged: []
+  - id: p6
+    label: '6'
+    tagged: []
+  - id: p7
+    label: '7'
+    tagged: []
+  - id: p8
+    label: '8'
+    tagged: []
+  - id: x1
+    label: SFP+1
+    kind: sfp
+    tagged: *id001
+  - id: x2
+    label: SFP+2
+    kind: sfp
+    tagged: *id001
+- id: sw4
+  role: switch
+  name: Switch 4
+  type: switch
+  model: 24-Port Managed
+  ip: 10.10.10.5
+  net: '10'
+  border: trunk
+  icons:
+  - cisco
+  ports:
+  - id: p1
+    label: '1'
+    tagged: *id001
+  - id: p2
+    label: '2'
+    tagged: *id001
+  - id: p3
+    label: '3'
+    tagged: []
+  - id: p4
+    label: '4'
+    tagged: []
+  - id: p5
+    label: '5'
+    tagged: []
+  - id: p6
+    label: '6'
+    tagged: []
+  - id: p7
+    label: '7'
+    tagged: []
+  - id: p8
+    label: '8'
+    tagged: []
+  - id: x1
+    label: SFP+1
+    kind: sfp
+    tagged: *id001
+  - id: x2
+    label: SFP+2
+    kind: sfp
+    tagged: *id001
+- id: sw5
+  role: switch
+  name: Switch 5
+  type: switch
+  model: 24-Port Managed
+  ip: 10.10.10.6
+  net: '10'
+  border: trunk
+  icons:
+  - cisco
+  ports:
+  - id: p1
+    label: '1'
+    tagged: *id001
+  - id: p2
+    label: '2'
+    tagged: *id001
+  - id: p3
+    label: '3'
+    tagged: []
+  - id: p4
+    label: '4'
+    tagged: []
+  - id: p5
+    label: '5'
+    tagged: []
+  - id: p6
+    label: '6'
+    tagged: []
+  - id: p7
+    label: '7'
+    tagged: []
+  - id: p8
+    label: '8'
+    tagged: []
+  - id: x1
+    label: SFP+1
+    kind: sfp
+    tagged: *id001
+  - id: x2
+    label: SFP+2
+    kind: sfp
+    tagged: *id001
+- id: d1
+  role: iot
+  name: Gerät 1
+  type: Drucker
+  model: Raspberry Pi 4
+  ip: 10.10.20.21
+  internal: geraet-1
+  net: '20'
+  icons:
+  - debian
+  status: planned
+- id: d2
+  role: iot
+  name: Gerät 2
+  type: Pi
+  model: NAS
+  ip: 172.16.80.22
+  internal: geraet-2
+  net: '80'
+  icons:
+  - glyph-air
+  status: active
+- id: d3
+  role: iot
+  name: Gerät 3
+  type: Pi
+  model: Mini-PC
+  ip: 192.168.50.23
+  internal: geraet-3
+  net: '50'
+  icons:
+  - debian
+  status: planned
+- id: d4
+  role: iot
+  name: Gerät 4
+  type: Pi
+  model: Mini-PC
+  ip: 172.16.80.24
+  internal: geraet-4
+  net: '80'
+  icons:
+  - raspberrypi
+  status: planned
+- id: d5
+  role: iot
+  name: Gerät 5
+  type: Pi
+  model: NAS
+  ip: 10.10.20.25
+  internal: geraet-5
+  net: '20'
+  icons:
+  - windows
+  status: active
+- id: d6
+  role: iot
+  name: Gerät 6
+  type: Pi
+  model: NAS
+  ip: 172.16.80.26
+  internal: geraet-6
+  net: '80'
+  icons:
+  - bambulab
+  status: planned
+- id: d7
+  role: iot
+  name: Gerät 7
+  type: IoT
+  model: Smart Plug
+  ip: 172.16.80.27
+  internal: geraet-7
+  net: '80'
+  icons:
+  - debian
+  status: planned
+- id: d8
+  role: iot
+  name: Gerät 8
+  type: IoT
+  model: Drucker
+  ip: 172.16.80.28
+  internal: geraet-8
+  net: '80'
+  icons:
+  - homeassistant
+  status: active
+- id: d9
+  role: iot
+  name: Gerät 9
+  type: PC
+  model: Mini-PC
+  ip: 192.168.40.29
+  internal: geraet-9
+  net: '40'
+  icons:
+  - windows
+  status: planned
+- id: d10
+  role: iot
+  name: Gerät 10
+  type: PC
+  model: NAS
+  ip: 172.16.80.30
+  internal: geraet-10
+  net: '80'
+  icons:
+  - glyph-antenna
+  status: active
+- id: d11
+  role: iot
+  name: Gerät 11
+  type: Pi
+  model: Raspberry Pi 4
+  ip: 172.16.80.31
+  internal: geraet-11
+  net: '80'
+  icons:
+  - homeassistant
+  status: active
+- id: d12
+  role: iot
+  name: Gerät 12
+  type: Drucker
+  model: Raspberry Pi 4
+  ip: 192.168.50.32
+  internal: geraet-12
+  net: '50'
+  icons:
+  - debian
+  status: planned
+- id: d13
+  role: iot
+  name: Gerät 13
+  type: Drucker
+  model: NAS
+  ip: 192.168.40.33
+  internal: geraet-13
+  net: '40'
+  icons:
+  - glyph-antenna
+  status: active
+- id: d14
+  role: iot
+  name: Gerät 14
+  type: Pi
+  model: Raspberry Pi 4
+  ip: 192.168.50.34
+  internal: geraet-14
+  net: '50'
+  icons:
+  - bambulab
+  status: planned
+- id: d15
+  role: iot
+  name: Gerät 15
+  type: PC
+  model: Raspberry Pi 4
+  ip: 192.168.50.35
+  internal: geraet-15
+  net: '50'
+  icons:
+  - glyph-antenna
+  status: active
+- id: d16
+  role: iot
+  name: Gerät 16
+  type: Pi
+  model: Mini-PC
+  ip: 192.168.50.36
+  internal: geraet-16
+  net: '50'
+  icons:
+  - bambulab
+  status: active
+- id: d17
+  role: iot
+  name: Gerät 17
+  type: Drucker
+  model: Raspberry Pi 4
+  ip: 192.168.50.37
+  internal: geraet-17
+  net: '50'
+  icons:
+  - windows
+  status: active
+- id: d18
+  role: iot
+  name: Gerät 18
+  type: Drucker
+  model: NAS
+  ip: 10.10.20.38
+  internal: geraet-18
+  net: '20'
+  icons:
+  - bambulab
+  status: planned
+- id: d19
+  role: iot
+  name: Gerät 19
+  type: IoT
+  model: Raspberry Pi 4
+  ip: 10.10.20.39
+  internal: geraet-19
+  net: '20'
+  icons:
+  - windows
+  status: active
+- id: d20
+  role: iot
+  name: Gerät 20
+  type: Drucker
+  model: NAS
+  ip: 10.10.10.40
+  internal: geraet-20
+  net: '10'
+  icons:
+  - windows
+  status: active
+- id: d21
+  role: iot
+  name: Gerät 21
+  type: Drucker
+  model: NAS
+  ip: 10.10.20.41
+  internal: geraet-21
+  net: '20'
+  icons:
+  - unifi
+  status: planned
+- id: d22
+  role: iot
+  name: Gerät 22
+  type: Pi
+  model: Drucker
+  ip: 172.16.80.42
+  internal: geraet-22
+  net: '80'
+  icons:
+  - homeassistant
+  status: active
+- id: d23
+  role: iot
+  name: Gerät 23
+  type: Drucker
+  model: Drucker
+  ip: 10.10.10.43
+  internal: geraet-23
+  net: '10'
+  icons:
+  - raspberrypi
+  status: active
+- id: d24
+  role: iot
+  name: Gerät 24
+  type: IoT
+  model: Raspberry Pi 4
+  ip: 192.168.50.44
+  internal: geraet-24
+  net: '50'
+  icons:
+  - unifi
+  status: planned
+- id: d25
+  role: iot
+  name: Gerät 25
+  type: IoT
+  model: NAS
+  ip: 10.10.10.45
+  internal: geraet-25
+  net: '10'
+  icons:
+  - debian
+  status: active
+- id: d26
+  role: iot
+  name: Gerät 26
+  type: Drucker
+  model: Mini-PC
+  ip: 10.10.20.46
+  internal: geraet-26
+  net: '20'
+  icons:
+  - bambulab
+  status: active
+- id: d27
+  role: iot
+  name: Gerät 27
+  type: Pi
+  model: Drucker
+  ip: 10.10.10.47
+  internal: geraet-27
+  net: '10'
+  icons:
+  - glyph-antenna
+  status: active
+- id: d28
+  role: iot
+  name: Gerät 28
+  type: Pi
+  model: Smart Plug
+  ip: 10.10.20.48
+  internal: geraet-28
+  net: '20'
+  icons:
+  - bambulab
+  status: active
+- id: d29
+  role: iot
+  name: Gerät 29
+  type: PC
+  model: Mini-PC
+  ip: 10.10.20.49
+  internal: geraet-29
+  net: '20'
+  icons:
+  - raspberrypi
+  status: planned
+- id: d30
+  role: iot
+  name: Gerät 30
+  type: PC
+  model: Mini-PC
+  ip: 192.168.40.50
+  internal: geraet-30
+  net: '40'
+  icons:
+  - unifi
+  status: active
+- id: d31
+  role: iot
+  name: Gerät 31
+  type: IoT
+  model: Mini-PC
+  ip: 172.16.80.51
+  internal: geraet-31
+  net: '80'
+  icons:
+  - homeassistant
+  status: planned
+- id: d32
+  role: iot
+  name: Gerät 32
+  type: Drucker
+  model: Smart Plug
+  ip: 172.16.80.52
+  internal: geraet-32
+  net: '80'
+  icons:
+  - raspberrypi
+  status: active
+- id: d33
+  role: iot
+  name: Gerät 33
+  type: IoT
+  model: NAS
+  ip: 192.168.40.53
+  internal: geraet-33
+  net: '40'
+  icons:
+  - unifi
+  status: active
+- id: d34
+  role: iot
+  name: Gerät 34
+  type: Pi
+  model: Mini-PC
+  ip: 10.10.20.54
+  internal: geraet-34
+  net: '20'
+  icons:
+  - glyph-antenna
+  status: active
+- id: d35
+  role: iot
+  name: Gerät 35
+  type: PC
+  model: Raspberry Pi 4
+  ip: 192.168.50.55
+  internal: geraet-35
+  net: '50'
+  icons:
+  - debian
+  status: active
+- id: d36
+  role: iot
+  name: Gerät 36
+  type: Drucker
+  model: Drucker
+  ip: 192.168.50.56
+  internal: geraet-36
+  net: '50'
+  icons:
+  - debian
+  status: planned
+- id: d37
+  role: iot
+  name: Gerät 37
+  type: Drucker
+  model: Mini-PC
+  ip: 10.10.20.57
+  internal: geraet-37
+  net: '20'
+  icons:
+  - glyph-antenna
+  status: planned
+- id: d38
+  role: iot
+  name: Gerät 38
+  type: Pi
+  model: NAS
+  ip: 10.10.10.58
+  internal: geraet-38
+  net: '10'
+  icons:
+  - windows
+  status: active
+- id: d39
+  role: iot
+  name: Gerät 39
+  type: IoT
+  model: Smart Plug
+  ip: 192.168.40.59
+  internal: geraet-39
+  net: '40'
+  icons:
+  - glyph-air
+  status: planned
+- id: d40
+  role: iot
+  name: Gerät 40
+  type: Drucker
+  model: NAS
+  ip: 192.168.40.60
+  internal: geraet-40
+  net: '40'
+  icons:
+  - homeassistant
+  status: planned
+- id: pve1
+  role: server
+  name: pve1
+  type: server
+  model: Proxmox Node
+  os: Proxmox VE 9
+  ip: 10.10.20.1
+  net: '20'
+  border: trunk
+  icons:
+  - proxmox
+  hw:
+  - icon: glyph-cpu
+    label: CPU
+    value: 8 Kerne
+    sub: Test
+  guests:
+  - id: 101
+    ip: '.121'
+    net: '20'
+    group: Dienste
+    name: Dienst 1.1
+    icons:
+    - docker
+    note: Test
+    internal: svc11
+  - id: 102
+    ip: '.122'
+    net: '20'
+    group: Dienste
+    name: Dienst 1.2
+    icons:
+    - docker
+    note: Test
+    internal: svc12
+  - id: 103
+    ip: '.123'
+    net: '20'
+    group: Dienste
+    name: Dienst 1.3
+    icons:
+    - docker
+    note: Test
+    internal: svc13
+  - id: 104
+    ip: '.124'
+    net: '20'
+    group: Dienste
+    name: Dienst 1.4
+    icons:
+    - docker
+    note: Test
+    internal: svc14
+  - id: 105
+    ip: '.125'
+    net: '20'
+    group: Dienste
+    name: Dienst 1.5
+    icons:
+    - docker
+    note: Test
+    internal: svc15
+- id: pve2
+  role: server
+  name: pve2
+  type: server
+  model: Proxmox Node
+  os: Proxmox VE 9
+  ip: 10.10.20.2
+  net: '20'
+  border: trunk
+  icons:
+  - proxmox
+  hw:
+  - icon: glyph-cpu
+    label: CPU
+    value: 8 Kerne
+    sub: Test
+  guests:
+  - id: 201
+    ip: '.141'
+    net: '20'
+    group: Dienste
+    name: Dienst 2.1
+    icons:
+    - docker
+    note: Test
+    internal: svc21
+  - id: 202
+    ip: '.142'
+    net: '20'
+    group: Dienste
+    name: Dienst 2.2
+    icons:
+    - docker
+    note: Test
+    internal: svc22
+  - id: 203
+    ip: '.143'
+    net: '20'
+    group: Dienste
+    name: Dienst 2.3
+    icons:
+    - docker
+    note: Test
+    internal: svc23
+  - id: 204
+    ip: '.144'
+    net: '20'
+    group: Dienste
+    name: Dienst 2.4
+    icons:
+    - docker
+    note: Test
+    internal: svc24
+  - id: 205
+    ip: '.145'
+    net: '20'
+    group: Dienste
+    name: Dienst 2.5
+    icons:
+    - docker
+    note: Test
+    internal: svc25
+- id: pve3
+  role: server
+  name: pve3
+  type: server
+  model: Proxmox Node
+  os: Proxmox VE 9
+  ip: 10.10.20.3
+  net: '20'
+  border: trunk
+  icons:
+  - proxmox
+  hw:
+  - icon: glyph-cpu
+    label: CPU
+    value: 8 Kerne
+    sub: Test
+  guests:
+  - id: 301
+    ip: '.161'
+    net: '20'
+    group: Dienste
+    name: Dienst 3.1
+    icons:
+    - docker
+    note: Test
+    internal: svc31
+  - id: 302
+    ip: '.162'
+    net: '20'
+    group: Dienste
+    name: Dienst 3.2
+    icons:
+    - docker
+    note: Test
+    internal: svc32
+  - id: 303
+    ip: '.163'
+    net: '20'
+    group: Dienste
+    name: Dienst 3.3
+    icons:
+    - docker
+    note: Test
+    internal: svc33
+  - id: 304
+    ip: '.164'
+    net: '20'
+    group: Dienste
+    name: Dienst 3.4
+    icons:
+    - docker
+    note: Test
+    internal: svc34
+  - id: 305
+    ip: '.165'
+    net: '20'
+    group: Dienste
+    name: Dienst 3.5
+    icons:
+    - docker
+    note: Test
+    internal: svc35
+- id: pve4
+  role: server
+  name: pve4
+  type: server
+  model: Proxmox Node
+  os: Proxmox VE 9
+  ip: 10.10.20.4
+  net: '20'
+  border: trunk
+  icons:
+  - proxmox
+  hw:
+  - icon: glyph-cpu
+    label: CPU
+    value: 8 Kerne
+    sub: Test
+  guests:
+  - id: 401
+    ip: '.181'
+    net: '20'
+    group: Dienste
+    name: Dienst 4.1
+    icons:
+    - docker
+    note: Test
+    internal: svc41
+  - id: 402
+    ip: '.182'
+    net: '20'
+    group: Dienste
+    name: Dienst 4.2
+    icons:
+    - docker
+    note: Test
+    internal: svc42
+  - id: 403
+    ip: '.183'
+    net: '20'
+    group: Dienste
+    name: Dienst 4.3
+    icons:
+    - docker
+    note: Test
+    internal: svc43
+  - id: 404
+    ip: '.184'
+    net: '20'
+    group: Dienste
+    name: Dienst 4.4
+    icons:
+    - docker
+    note: Test
+    internal: svc44
+  - id: 405
+    ip: '.185'
+    net: '20'
+    group: Dienste
+    name: Dienst 4.5
+    icons:
+    - docker
+    note: Test
+    internal: svc45
+links:
+- a: modem.l1
+  b: fw.wan
+  speed: 1G
+  net: wan
+- a: fw.a
+  b: sw1.p1
+  speed: 10G
+  vlans: *id001
+- a: fw.b
+  b: sw2.p1
+  speed: 10G
+  vlans: *id001
+- a: sw1.x1
+  b: sw2.x1
+  speed: 10G
+  vlans: *id001
+- a: sw1.p3
+  b: sw3.p1
+  speed: 1G
+  vlans: *id001
+- a: sw1.p4
+  b: sw4.p1
+  speed: 1G
+  vlans: *id001
+- a: sw2.p5
+  b: sw5.p1
+  speed: 1G
+  vlans: *id001
+- a: sw4.p2
+  b: d1
+  speed: 1G
+  net: '20'
+- a: sw4.p3
+  b: d2
+  speed: 1G
+  net: '80'
+- a: sw5.p2
+  b: d3
+  speed: 2.5G
+  net: '50'
+- a: sw1.p6
+  b: d4
+  speed: 2.5G
+  net: '80'
+- a: sw1.p7
+  b: d5
+  speed: 2.5G
+  net: '20'
+- a: sw3.p2
+  b: d6
+  speed: 1G
+  net: '80'
+- a: sw2.p6
+  b: d7
+  speed: 1G
+  net: '80'
+- a: sw1.p8
+  b: d8
+  speed: 2.5G
+  net: '80'
+- a: sw5.p3
+  b: d9
+  speed: 1G
+  net: '40'
+- a: sw2.p7
+  b: d10
+  speed: 2.5G
+  net: '80'
+- a: sw4.p4
+  b: d11
+  speed: 100M
+  net: '80'
+- a: sw3.p3
+  b: d12
+  speed: 100M
+  net: '50'
+- a: sw4.p5
+  b: d13
+  speed: 1G
+  net: '40'
+- a: sw4.p6
+  b: d14
+  speed: 2.5G
+  net: '50'
+- a: sw4.p7
+  b: d15
+  speed: 1G
+  net: '50'
+- a: sw2.p8
+  b: d16
+  speed: 1G
+  net: '50'
+- a: sw5.p4
+  b: d17
+  speed: 2.5G
+  net: '50'
+- a: sw4.p8
+  b: d18
+  speed: 2.5G
+  net: '20'
+- a: sw5.p5
+  b: d19
+  speed: 1G
+  net: '20'
+- a: sw3.p4
+  b: d20
+  speed: 100M
+  net: '10'
+- a: sw1.p9
+  b: d21
+  speed: 100M
+  net: '20'
+- a: sw3.p5
+  b: d22
+  speed: 2.5G
+  net: '80'
+- a: sw5.p6
+  b: d23
+  speed: 1G
+  net: '10'
+- a: sw3.p6
+  b: d24
+  speed: 1G
+  net: '50'
+- a: sw2.p9
+  b: d25
+  speed: 1G
+  net: '10'
+- a: sw2.p10
+  b: d26
+  speed: 100M
+  net: '20'
+- a: sw5.p7
+  b: d27
+  speed: 2.5G
+  net: '10'
+- a: sw2.p11
+  b: d28
+  speed: 1G
+  net: '20'
+- a: sw1.p10
+  b: d29
+  speed: 100M
+  net: '20'
+- a: sw2.p12
+  b: d30
+  speed: 100M
+  net: '40'
+- a: sw3.p7
+  b: d31
+  speed: 1G
+  net: '80'
+- a: sw3.p8
+  b: d32
+  speed: 100M
+  net: '80'
+- a: sw5.p8
+  b: d33
+  speed: 100M
+  net: '40'
+- a: sw2.p13
+  b: d34
+  speed: 100M
+  net: '20'
+- a: sw1.p11
+  b: d35
+  speed: 1G
+  net: '50'
+- a: sw2.p14
+  b: d36
+  speed: 1G
+  net: '50'
+- a: sw1.p12
+  b: d37
+  speed: 100M
+  net: '20'
+- a: sw1.p13
+  b: d38
+  speed: 1G
+  net: '10'
+- a: sw1.p14
+  b: d39
+  speed: 100M
+  net: '40'
+- a: sw1.p15
+  b: d40
+  speed: 1G
+  net: '40'
+- a: sw1.x2
+  b: pve1
+  speed: 10G
+  vlans: *id001
+- a: sw2.x2
+  b: pve2
+  speed: 10G
+  vlans: *id001
+- a: sw1.p2
+  b: pve3
+  speed: 10G
+  vlans: *id001
+- a: sw2.p2
+  b: pve4
+  speed: 10G
+  vlans: *id001

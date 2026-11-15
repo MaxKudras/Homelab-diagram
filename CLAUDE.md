@@ -24,47 +24,96 @@ Herkunft des Tools: Es stammt ursprünglich von *u/goblinmine* (MIT-Lizenz, `LIC
    - Die Arbeit ist committet und auf den Arbeits-Branch gepusht.
 3. **Zurückmelden:** kurz auf Deutsch sagen, was geändert wurde, wie geprüft wurde und was auffiel. Das Ergebnisbild mitschicken.
 4. **Qualität vor Tempo:** Es soll richtig gut aussehen und richtig informativ sein, aber klar, nicht eng oder überladen. Man muss sehen, wo jede Verbindung hingeht.
-5. **Sprache:** Mit Max immer **Deutsch**. Code, Kommentare und YAML-Schlüssel bleiben im bestehenden Stil (Englisch), solange Max nichts anderes sagt.
+5. **Planen, auflisten, abarbeiten:** Jede Aufgabe wird zuerst in **viele nummerierte Unteraufgaben** zerlegt. Dieser Plan (mit Reihenfolge) wird Max **ausgegeben, bevor** die Arbeit beginnt. Dann wird Punkt für Punkt abgearbeitet und der Fortschritt gemeldet. Kommen unterwegs neue Punkte dazu, die noch nicht im Plan stehen: **anhalten, neu planen, den neuen Plan mit Reihenfolge ausgeben**, erst dann weitermachen.
+6. **Versionen:** Nach jeder **größeren** Änderung am Diagramm (vieles hat sich verändert, z. B. neues Layout, neue Engine, große neue Bereiche) wird eine neue Version erstellt, damit Max alte Stände jederzeit aufrufen kann. Bei kleinen Einzelschritten **nicht**.
+   - Git-Tag `vN` auf den Commit.
+   - Lauffähige Kopie in `homelab-diagram-main/versions/vN/` (Code + YAML + `example.png`), rendert mit `python3 versions/vN/build.py` (Ausgabe in `versions/vN/out/`).
+   - Eintrag in `homelab-diagram-main/versions/README.md`: Version, Datum, was sich geändert hat.
+7. **Sprache:** Mit Max immer **Deutsch**. Code, Kommentare und YAML-Schlüssel bleiben im bestehenden Stil (Englisch), solange Max nichts anderes sagt.
 
 ---
 
 ## Das Tool im Detail (`homelab-diagram-main/`)
 
-### Dateien
+### Dateien (Version 2, seit 14.11.2026)
 
-- `inventory.yaml` enthält **alle Inhalte**: VLANs, ISP-Router, Firewall, Switch-Ports, Geräte, SSIDs, Portweiterleitungen, Server-Hardware, VMs/CTs, DMZ-Gruppen, Pools und Media-Pipeline.
-- `build.py` (~920 Zeilen) enthält das **handplatzierte Layout**. Es zeichnet eine SVG mit absoluten Koordinaten (Canvas `W=2400`, `H=2326`), bettet Icons als Base64 ein und wandelt mit `rsvg-convert -z 1.6` in PNG um (PNG-Pixel = SVG-Einheit × 1,6 → 3840 × 3722 px).
-- `fetch_icons.py` lädt die Dienst-Icons aus `homarr-labs/dashboard-icons` nach `icons/`. Nur die eigenen `icons/glyph-*.svg` (CPU, RAM, SSD, HDD, NIC, GPU, DHCP, Schild, Block, Antenne) sind im Git.
-- `docs/example.png` ist das Referenzbild (so sieht der unveränderte Stand aus).
-- `out/` ist die Ausgabe (gitignored): `homelab.svg/png` (geschwärzt) und `homelab-unredacted.*` (mit `--unredacted`).
+- `build.py` ist nur der **Startbefehl**: Lab laden (Schema 1 oder 2), Quellen + `overrides.yaml` dazumischen, prüfen, zeichnen, QA, SVG → PNG (`rsvg-convert -z 1.6`).
+- `hld/` enthält die **Engine** (ein Modul je Aufgabe):
 
-### Aufbau von `build.py` (Reihenfolge im Code)
+  | Modul | Aufgabe |
+  |---|---|
+  | `theme.py` | Palette, `SPEED_W`, Rahmen (linke/rechte Spalte, `CX`) |
+  | `text.py` | **exakte** Textbreite mit Pillow aus `fonts/` (`measure`), Schwärzen (`sub`/`esc`/`fqdn`) |
+  | `svg.py` | SVG-Grundteile (`rect`, `text`, `line`, `trunk`, `pill`, `label` …) + Register aller Texte/Karten/Kabel für die QA |
+  | `parts.py` | Bausteine aus dem Original: Ordner-Karte, Buchse, VLAN-Striche, Hardware-Kachel, Gast-Karte, Pool, Chip, Status-Punkt, jeweils mit Größenfunktion (erst messen, dann zeichnen) |
+  | `model.py` | Datenmodell **Schema 2** (`Lab`, `Network`, `Device`, `Port`, `Link`, `Guest`), Doku des Formats im Kopf der Datei |
+  | `legacy.py` | wandelt die alte `inventory.yaml` (Schema 1) in Schema 2 um |
+  | `validate.py` | Datenprüfung mit deutschen Meldungen (unbekanntes VLAN, Port doppelt belegt, doppelte VMID/IP …) |
+  | `render.py` | **Layout-Engine**: Ebenen aus dem Verbindungsgraphen, Platzierung, Umbruch, Kanäle, Zeichnen |
+  | `route.py` | **Kabel-Router**: Spuren je Kanal, Kreuzungen minimieren, Spuren packen |
+  | `server.py` | große Server-Karte: Hardware, hervorgehobene Gäste, Zonen je VLAN mit ausbalancierten Chip-Spalten |
+  | `panels.py` | Kopf, Internet-Wolke, Fernzugriff, Cloud-Dienste, Netzwerke, Legende (nur genutzte Einträge), Portweiterleitungen, Flow-Panels (`media_pipeline`, allgemeines `flow`) |
+  | `ips.py` | alle genutzten IPs + IP-Liste |
+  | `qa.py` | Prüfung des fertigen Bilds: Text auf Text, Kabel durch Karten, Kabel durch Text |
+  | `render2.py`, `route2.py`, `layouts_flow.py` | Ansichten `cluster`/`flow` und Flächen-Router (v3) |
+  | `optimize.py` | Optimierer für `cluster`: Aufteilung der Spalten links/rechts je Switch (v4) |
+  | `layouts_manual.py` | Ansicht `manual`: Positionen aus der YAML bzw. dem Planungs-Tool (v4) |
+  | `sources/` | Datenquellen (nur lesend): `ansible`, `netbox`, `proxmox`, `prometheus`, `opnsense`, dazu `merge` und `collect` |
 
-1. **Konstanten & Palette**: dunkles GitHub-artiges Theme (`BG #0b0f15`, `PANEL`, `CHIP`, `TEXT`, `MUTED`, `FAINT`), `SPEED_W` (Linienbreite je Geschwindigkeit), VLAN-Farben aus der YAML (`C[key]`).
-2. **Helfer**:
-   - `sub()`/`esc()` füllen `{domain}` und schwärzen.
-   - `tw()` schätzt grob die Textbreite. `measure()` misst sie exakt mit Pillow und der echten Fira Sans.
-   - Klasse `SVG` mit `rect`, `text`, `icon`, `line`, `trunk`, `arrow`, `pill`, `label` (Text mit Hintergrund-Aussparung). `rounded()` erzeugt orthogonale Linien mit runden Ecken.
-3. **Bausteine**:
-   - `card()`, `device_card()` (Ordner-Reiter-Karte für physische Geräte, `folder()` + `tab_width()`), `hw_bar()` (hellbraune Hardware-Leiste).
-   - `jack()` (RJ45/SFP-Buchse), `ticks()` (VLAN-Striche an Ports), `vlan_tag()`, `addr()` (IP · Hostname).
-4. **Sektionen** (im Code mit `# ====` markiert):
-   - Header: Titel, Watermark, Datum.
-   - `TOP: edge chain`: Internet-Wolke, Fernzugriff, Cloud-Dienste, FRITZ!Box mit Ports, OPNsense (Hardware + Dienste), LACP-Trunk.
-   - `switch`: Ports aus der YAML, `port_x()` mit `PX0`/`PITCH`.
-   - `device row` (`DY`): MADCAT, JetKVM, AP + SSIDs, SLZB. Die Kabelwege zu den Geräten sind von Hand geführt.
-   - `open to the internet`: Portweiterleitungen.
-   - `legend` und `VLAN table` (linke Spalte).
-   - `terra`: große Server-Karte mit Hardware-Liste, Gästen außerhalb der DMZ (TrueNAS mit Pools/Disks, HAOS, UniFi, BlissOS) und der DMZ-Zone mit 4 Spalten (`column(i, [Gruppen])`) aus `chip()`/`chip_apps()`.
-   - `media pipeline`: Erklär-Panel rechts.
-5. **Ausgabe**: `assert` für Canvas-Höhe, SVG schreiben, `rsvg-convert` aufrufen.
+- `inventory.yaml`: das Original-Lab von u/goblinmine (Schema 1, wird über `legacy.py` gelesen).
+- `examples/`: Test-Labs in Schema 2. `klein` (4 Geräte), `max-zukunft` (Max' möglicher Ausbau, **Beispieldaten**), `stress-60` (erzeugt von `make_stress.py`), `aus-quellen` (komplett aus den Quellen-Beispieldaten).
+- `sources.example.yaml`: Vorlage für `sources.yaml` (die echte Datei ist gitignored). `tests/fixtures/` enthält Beispielantworten aller Quellen, `tests/test_sources.py` die Tests.
+- `versions/vN/`: eingefrorene, lauffähige alte Versionen (siehe Regel 6).
+- `setup.py`, `fetch_icons.py`, `fonts/`, `icons/glyph-*.svg`: wie gehabt (eigene Glyphen neu: `glyph-air`, `-kvm`, `-switch`, `-ups`).
+- `docs/example.png` zeigt den aktuellen Stand (v2). Das v1-Bild liegt in `versions/v1/example.png`.
 
-**Generisch** (kommt aus der YAML): VLAN-Tabelle, Legende, Portweiterleitungen, Cloud-Dienste, Firewall-Hardware/-Dienste, Switch-Ports, Gerätekarten, SSIDs, Hardware-Kacheln, DMZ-Gruppen/-Chips, Pools.
-**Hartkodiert** (Koordinaten in `build.py`): Positionen aller großen Blöcke, Anzahl/Art der Geräte in der Gerätezeile und deren Kabelwege, die 4 festen „other guests“, die Zuordnung der DMZ-Spalten und die komplette Media-Pipeline. Details stehen in der Tabelle in `homelab-diagram-main/CLAUDE.md`.
+### So arbeitet die Engine (`render.py`)
+
+1. **Karten messen** (`Node`): ISP-Router/Switch = Karte mit Port-Reihe, Firewall/Router = „Appliance“ mit Hardware/Diensten und freien Buchsen, Server mit Gästen = Server-Karte, Rest = Geräte-Karte. Größe kommt nur aus dem gemessenen Inhalt.
+2. **Ebenen**: Breitensuche vom Internet-Anschluss über die Kabel. Die führenden Ebenen aus reiner Infrastruktur bilden die zentrierte **Kette** (ISP → Firewall(s) → Core-Switch(es)), alles darunter sind **Gerätereihen**, Server kommen ins **Server-Band** unten.
+3. **Platzieren** je Reihe: Jede Karte möchte ihren ersten Kabeleingang genau unter ihren Port legen. Isotone Regression (`pav`) verhindert Überlappungen. Zu breite Reihen werden erst kompakter (`shrink`: weniger Dienste-Spalten, Ports unter den Kopf), dann unter die Seitenspalten geschoben (volle Breite), dann umgebrochen (`_chunks`). Kabel, die eine Reihe nur durchqueren, bekommen dort eine eigene Gasse (`Pseudo`). Server stehen nebeneinander, sobald sie passen, und eine Reihe hat eine gemeinsame Höhe.
+4. **Kanäle** zwischen den Reihen: `route.assign` vergibt Spuren mit wenig Kreuzungen. Die Höhe des Kanals ergibt sich daraus. In der Kette laufen Kabel gerade, wo die Ports übereinander liegen (`chain_align`), LACP-Bündel bekommen die Ellipse.
+5. **Zeichnen**: Karten → Kabel (mit dunkler Aussparung, damit Kreuzungen lesbar bleiben) → Buchsen + VLAN-Striche → Speed-Labels.
+6. **QA** (`qa.run`): Text auf Text, Kabel durch Karten oder Text, **Kabel aufeinander** (zu dicht parallel). Bei einem Fund bricht `build.py` ab. Mit `--no-qa` lässt sich das Bild trotzdem ansehen.
+
+### Ansichten / Layouts (v3/v4, `--layout=`)
+
+| Layout | Modul | Gedacht für |
+|---|---|---|
+| `rows` | `render.py` (v2) | kleine Labs, sieht aus wie das Original. Bei großen Labs entstehen übereinanderliegende Kabel, die die QA jetzt meldet. |
+| `cluster` | `render2.py` + `optimize.py` | **große Labs**: Kette oben, darunter je Switch ein **Baum-Block**. Seit v4 mit **zweiseitigem Kamm**: Spalten links der Ports treten von links ein, Spalten rechts davon von rechts. Jede Seite ist für sich kreuzungsfrei (`Renderer2.comb`). Der **Optimierer** (`optimize.py`) sucht per Koordinatenabstieg die Aufteilung (Spalten links/rechts, Größen) mit der kürzesten geschätzten Kabellänge, Höhe und Breite. |
+| `flow` | `layouts_flow.py` + `render2.py` | Lesen von links nach rechts: alle Panels links, Kette senkrecht, Blöcke rechts daneben. Zum Vergleich gedacht, hat mehr Kreuzungen. |
+| `manual` | `layouts_manual.py` + `render2.py` | **von Hand** (Planungs-Tool): `pos: {x, y, w}` je Gerät, `via: [[x, y], …]` und `sides` je Verbindung, `layout.panels.<key>: {x, y}`, `layout.internet.x`. Geräte ohne `pos` platziert der Optimierer. Kabel mit `via` laufen genau durch die Punkte (rechtwinklig ergänzt), sonst nimmt der A*-Router den Weg. Liegt etwas links vom Rand, wird alles nach rechts verschoben. |
+| `auto` (Standard) | `build.auto_layout` | `manual`, sobald ein Gerät `pos` hat, sonst `rows` bis 8 Geräte unter den Switches, sonst `cluster` |
+
+- **Gemeinsam für `cluster`/`flow`:**
+  - `route2.py` ist der **Flächen-Router**: A* auf 8-px-Raster, Abstand je Linienbreite (16 px dünn / 24 px Trunk), Kreuzungen nur rechtwinklig und teuer, wenige Knicke, kurzer gerader Austritt an Karten. Was der Kamm verlegt hat, sperrt er als Hindernis (`commit_path`).
+  - Ein KVM-Switch mit mehreren Servern bekommt **Abzeichen** statt langer Konsolenlinien.
+  - Server wählen ihre Breite selbst (`ServerCard.best_w`).
+  - Die Canvas wächst eher in die Breite als in die Höhe (`MAX_W`).
+- **Bewertung** (`qa.score`, wird bei jedem Render ausgegeben): Kreuzungen, Kabellänge, Knicke, längstes Kabel, Größe.
+- **Vergleichsseite:** `python3 build.py --examples --layout=all --no-qa > out/examples-all.log; python3 build.py --layout=all --no-qa >> out/examples-all.log; python3 vergleich.py` → `out/vergleich.html` (eine Datei, Bilder eingebettet, am Handy zoombar).
+
+### Planungs-Tool (`planer/`, v4)
+
+Separates Werkzeug, um das Lab **von Hand** zu planen: **eine HTML-Datei** `planer/planer.html`. Sie läuft offline im Browser und am Handy und enthält Fonts, Icons und Beispiele.
+
+| Datei | Inhalt |
+|---|---|
+| `planer/src/planer.html` | Vorlage: Oberfläche (Kopfleiste, Geräte-Palette, Zeichenfläche, Eigenschaften), CSS inkl. Handy-Schubladen |
+| `planer/src/yaml.js` | eigener YAML-Leser/-Schreiber (keine fremde Bibliothek), versteht auch Anker und Flow-Stil |
+| `planer/src/core.js` | Datenmodell wie Schema 2, Kartengeometrie wie `render2.Node`, Kabel-Enden, IP-Liste, Prüfung (wie `validate.py` + Karten-Überlappung), Umwandlung alter `inventory.yaml`, Vorlagen je Rolle |
+| `planer/src/draw.js` | SVG in der Optik des Diagramms (Ordner-Reiter, Buchsen, VLAN-Striche, Trunks, Panels, Internet-Wolke) |
+| `planer/src/app.js` | Bedienung: Ziehen (8-px-Raster, Hilfslinien), Mehrfachauswahl, Kabel von Buchse/Kreis ziehen, Wegpunkte (Doppelklick), Server-Breite, Formulare, Listen, IP-Liste, Prüfung, Autospeichern + Verlauf, Rückgängig, Öffnen/Speichern YAML, Suche, Pinch-Zoom |
+| `planer/build_planer.py` | baut `planer/planer.html` (Fonts + Icons + Beispiele eingebettet). **Nach jeder Änderung in `planer/src/` ausführen und committen.** |
+
+- **Rundreise:** Im Planer „YAML speichern“, dann `python3 build.py --lab=datei.yaml`. Das Ergebnis ist das Layout `manual`, mit QA wie immer.
+- **Tests:** `tests/test_planer.py` prüft, ob `planer.html` aktuell ist. `tests/planer_roundtrip.js` (Node + Playwright) testet Laden, Ziehen, Drucker anlegen, Kabel ziehen, Umbenennen, Export und Render ohne QA-Fund.
+- Screenshots: Node-Playwright (`require('playwright')`). Python-Playwright ist nicht installiert.
 
 ### Sicherheitsnetze
 
-`assert`s brechen ab, wenn Hardware-Liste, DMZ-Spalte, Pipeline-Panel oder Canvas überlaufen. Dann `H`, `ZH` usw. vergrößern oder umverteilen, **nie** einfach das Assert löschen.
+`validate.check` (Daten) und `qa.run` (Bild) brechen den Build ab. **Nie** abschalten, um ein Ergebnis zu erzwingen. Stattdessen die Ursache in Layout oder Daten beheben.
 
 ### Designregeln (beibehalten, außer Max will es anders)
 
@@ -74,7 +123,7 @@ Herkunft des Tools: Es stammt ursprünglich von *u/goblinmine* (MIT-Lizenz, `LIC
 - **Kartenrand = VLAN-Farbe** des Geräts. Geräte am Trunk bekommen `TRUNK_BORDER`.
 - Physische Geräte nutzen die **Ordner-Reiter-Karte**: Reiter = `Name · Typ`, darunter Icon, Modell, `IP · Hostname` (VLAN-Farbe), OS + Version.
 - Hardware-Kacheln haben die hellbraune Leiste links: Label = Typ, Wert = Bauteil, Unterzeile = Info oder `passthrough → Gast`.
-- DMZ-Chips: `CT <id>` oben rechts, `.<Oktett>` darunter. Hostname in Blau = öffentlich über den Reverse Proxy, `name.internal` = nur lokal, `LAN`-Pill = öffentlicher Name, aber nur LAN/VPN.
+- DMZ-Chips: `CT <id>` bzw. `VM <id>` oben rechts (Art kommt aus den Daten), `.<Oktett>` darunter. Hostname in Blau = öffentlich über den Reverse Proxy, `name.internal` = nur lokal, `LAN`-Pill = öffentlicher Name, aber nur LAN/VPN.
 - Multi-App-Container werden **eine** hohe Karte mit einer Zeile pro App. Das Docker-Badge gibt es nur bei Multi-App-Docker-CTs.
 - Keine internen Ports, nur Portweiterleitungen aus dem Internet.
 - ZFS in TiB/GiB, Platten in TB (wie verkauft). Texte kurz und sachlich.
@@ -86,26 +135,37 @@ Herkunft des Tools: Es stammt ursprünglich von *u/goblinmine* (MIT-Lizenz, `LIC
 
 ```bash
 cd homelab-diagram-main
-python3 fetch_icons.py          # Icons laden (einmal; dauert hier lange, s. u.)
+python3 setup.py                # Fonts + rsvg-convert + Icons (einmal pro Sitzung, ~5 s)
 python3 build.py                # → out/homelab.svg + out/homelab.png (geschwärzt)
 python3 build.py --unredacted   # → out/homelab-unredacted.*
+python3 build.py --ips=table    # IP-Varianten: table | inline | both | sheet → out/homelab-ips-<variante>.*
+python3 build.py --variants     # alle Varianten auf einmal (Standard + 4 IP-Varianten)
+python3 build.py --examples     # alle Labs in examples/ → out/examples/
+python3 build.py --layout=cluster   # Ansicht wählen: auto (Standard) | rows | cluster | flow | manual | all
+python3 build.py --export-positions # Positionen der Ansicht → out/<name>-positionen.yaml (für den Planer)
+python3 planer/build_planer.py      # Planungs-Tool neu bauen → planer/planer.html
+python3 build.py --lab=DATEI    # ein anderes Lab (Schema 1 oder 2)
+python3 build.py --collect      # erst Daten aus sources.yaml holen → inventory.generated.yaml (+ Änderungsbericht)
+python3 -m unittest discover tests   # Tests: Quellen, alle Labs × Layouts ohne QA-Fund, Kreuzungs-Grenzen (~30 s)
 ```
+
+**Datenfluss:** `inventory.yaml` (bzw. `--lab`) → + `inventory.generated.yaml` (aus `--collect`) → + `overrides.yaml` (von Hand, gewinnt immer). Listen werden über `id`/`key` bzw. bei Verbindungen über ihre beiden Enden zusammengeführt.
+
+**IP-Liste:** `collect_ips()` sammelt jede genutzte Adresse aus der YAML (Karten, Gäste, DMZ, OPNsense `.1` je Trunk-VLAN) plus `ip_extra` (Adressen ohne eigene Karte, z. B. VPN-Peers). Doppelt vergebene IPs werden rot markiert. `table` = Liste unter terra (Canvas wird höher), `inline` = volle IPs auf den DMZ-Chips, `both` = beides, `sheet` = Liste als eigenes Bild mit Hostnamen. Ohne `--ips` bleibt das Bild unverändert.
 
 Abhängigkeiten: Python 3 + PyYAML + Pillow, `rsvg-convert` (librsvg) und die Fonts **Fira Sans** und **Fira Code**. Ohne Fira Sans stimmen alle Textbreiten nicht.
 
-**Einrichtung in der Cloud-Sitzung** (der Container ist frisch, nichts davon bleibt erhalten):
+**Einrichtung (Cloud-Sitzung oder neuer PC), ein Befehl, ~5 Sekunden:**
 
 ```bash
-apt-get install -y librsvg2-bin fonts-firacode
-mkdir -p ~/.local/share/fonts/fira && cd ~/.local/share/fonts/fira
-for w in Regular Medium SemiBold Bold; do
-  curl -sSfL -o FiraSans-$w.ttf "https://raw.githubusercontent.com/mozilla/Fira/master/ttf/FiraSans-$w.ttf"; done
-fc-cache -f
+cd homelab-diagram-main && python3 setup.py
 ```
 
-Einen apt-Paket für Fira Sans gibt es hier nicht. ImageMagick heißt hier `convert`, nicht `magick`.
+Das installiert die Fonts **aus dem Repo** (`fonts/`: Fira Sans + Fira Code, OFL-Lizenz) nach `~/.local/share/fonts/homelab-diagram`, installiert `rsvg-convert` per apt falls es fehlt (als root) und lädt fehlende Icons **parallel**. `cdn.jsdelivr.net` ist in der Cloud gesperrt. `fetch_icons.py` merkt das beim ersten Fehlversuch und nimmt danach direkt `raw.githubusercontent.com` (vorher ~7 Min., jetzt ~2 s). `python3 fetch_icons.py --force` lädt alle Icons neu.
 
-**Icons:** `cdn.jsdelivr.net` wird vom Proxy dieser Umgebung blockiert (403 beim Tunnel). `fetch_icons.py` fällt dann auf `raw.githubusercontent.com` zurück, wartet aber pro Icon erst die Retries ab. Deshalb dauert der Download etwa 6–7 Minuten (63 Icons), also im Hintergrund laufen lassen.
+**Fonts aktuell halten:** `python3 setup.py --check-fonts` vergleicht `fonts/` mit dem neuesten Stand (Fira Sans: SHA-256 gegen `mozilla/Fira` master; Fira Code: Versionsnummer aus dem README von `tonsky/FiraCode`). `python3 setup.py --update-fonts` lädt neuere Dateien nach `fonts/` und trägt sie in `fonts/fonts.json` ein. Danach neu rendern, vergleichen und committen.
+
+ImageMagick heißt hier `convert`, nicht `magick`.
 
 **Geprüft am 12.11.2026:** Mit diesem Setup rendert der unveränderte Stand fehlerfrei. Gegenüber `docs/example.png` liegt die mittlere Pixelabweichung bei ~0,9/255. Das ist nur Kantenglättung bzw. Font-Version, Layout und Inhalt sind identisch. Diese Abweichung ist also normal und kein Fehler.
 
@@ -114,7 +174,7 @@ Einen apt-Paket für Fira Sans gibt es hier nicht. ImageMagick heißt hier `conv
 ## Prüfen (vor jeder Rückmeldung)
 
 1. **Vorher-Bild sichern:** `cp out/homelab.png <scratchpad>/before.png` (vor der Änderung).
-2. `python3 build.py`. Es muss ohne Fehler und ohne Assert durchlaufen.
+2. `python3 build.py` und `python3 build.py --examples`. Beides muss ohne Fehler, Prüf- oder QA-Meldung durchlaufen. Dazu kommt `python3 -m unittest discover tests`.
 3. **Gesamtbild ansehen** (verkleinert): `convert out/homelab.png -resize 30% <scratchpad>/full.png` und mit Read öffnen.
 4. **Ausschnitte ansehen** an der geänderten Stelle und an dichten Bereichen. Koordinaten mal 1,6 rechnen: `convert out/homelab.png -crop 1400x900+X+Y +repage <scratchpad>/crop.png`.
 5. **Diff gegen vorher:** mit Pillow `ImageChops.difference(...).getbbox()`. Die Änderung darf nur dort sein, wo sie hingehört.
@@ -123,7 +183,7 @@ Einen apt-Paket für Fira Sans gibt es hier nicht. ImageMagick heißt hier `conv
 
 ## Git
 
-- Arbeits-Branch: siehe Sitzungsvorgabe (aktuell `claude/ecstatic-planck-8tlt5r`). Basis ist `main`.
+- Arbeits-Branch: siehe Sitzungsvorgabe (aktuell `claude/charming-edison-n1eyfr`). Basis ist `main`.
 - `out/`, `__pycache__/` und heruntergeladene Icons werden nicht committet (`.gitignore`).
 - Nach jeder abgeschlossenen Aufgabe committen und pushen, Commit-Nachricht auf Deutsch, knapp und sachlich.
 

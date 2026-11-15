@@ -1,0 +1,39 @@
+{
+ "/api/v1/targets": {
+  "status": "success",
+  "data": {
+   "activeTargets": [
+    {
+     "labels": {
+      "instance": "pve1:9100"
+     },
+     "health": "up"
+    },
+    {
+     "labels": {
+      "instance": "heimdall:9100"
+     },
+     "health": "up"
+    },
+    {
+     "labels": {
+      "instance": "10.10.20.217:9617"
+     },
+     "health": "up"
+    },
+    {
+     "labels": {
+      "instance": "valhalla:9100"
+     },
+     "health": "down"
+    },
+    {
+     "labels": {
+      "instance": "10.10.20.226:9205"
+     },
+     "health": "up"
+    }
+   ]
+  }
+ }
+}
